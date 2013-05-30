@@ -1,0 +1,87 @@
+menu "Device Drivers"
+
+config LGE_BACKLIGHT_LM3530
+	bool "select lm3530 device as LGE backlight management for I "
+	default y
+	---help---
+	LGE backlight management (lm3530)
+
+config LGE_DISPLAY_MIPI_LGIT_VIDEO_HD_PT
+	bool "LGE_DISPLAY_MIPI_LGIT_VIDEO_HD_PT"
+	select FB_MSM_MIPI_DSI
+	---help---
+	LGE display management
+
+config LGE_DISPLAY_MIPI_LGIT_IJB_VIDEO_HD_PT
+	bool "LGE_DISPLAY_MIPI_LGIT_IJB_VIDEO_HD_PT"
+	select FB_MSM_MIPI_DSI
+	---help---
+	LGE display management
+
+endmenu
+
+menu "Features"
+
+config LGE_I_DISP_FBREAD
+	bool "enable msm_fb_read"
+	default y
+	---help---
+	select this feature if you want to dump framebuffer
+
+config LGE_I_DISP_EARLYSUSPEND
+	bool "enable LCD early suspend"
+	default y
+	---help---
+	select this feature if you want to enable LCD early suspend
+
+config LGE_I_DISP_UNDERRUN
+	bool "prevent under-run during video play"
+	default y
+	---help---
+	select this feature for preventing under-run issue
+
+config LGE_I_DISP_PHYSIZE
+	bool "hard-coding for LCD physical size"
+	default y
+	---help---
+	select this feature for fb_info.var.width=56, fb_info.var.height=99
+
+config LGE_I_DISP_HSMODE
+	bool "MIPI clk High Speed mode"
+	default y
+	---help---
+	select this feature for HM mode MIPI clock
+
+config LGE_I_DISP_OVERLAYUI
+	bool "patch for overlay UI"
+	default y
+	---help---
+	select this feature for overlay UI
+
+config LGE_I_DISP_BOOTLOGO
+	bool "enable bootlogo in kernel"
+	default y
+	---help---
+	select this feature for kernel bootlogo
+
+config LGE_I_DISP_OV_MUTEX
+	bool "fix overlay lock-up issue"
+	default y
+	---help---
+	select this feature for resolving overlay lock-up issue
+
+config LGE_SHOW_FB_BOOTLOGO
+	bool "Display boot animation from the frame buffer driver, for batman domestic models only"
+	default n
+	depends on MACH_LGE_120_BOARD
+	---help---
+	Select this feature to show boot animation from the frame buffer driver
+
+config LGE_K_CAL
+    bool "K_calibration for lcd tunning"
+    default n
+	depends on MACH_LGE_120_BOARD
+    ---help---
+    select this feature for kcal function enable
+
+endmenu

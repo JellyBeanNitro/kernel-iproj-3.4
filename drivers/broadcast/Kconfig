@@ -1,0 +1,24 @@
+# LGE Broadcast Device Driver Support
+
+menu "LGE Broadcast Device Support"
+
+
+#config LGE_BROADCAST_1SEG
+#	bool "1Seg Broadcast service"
+#	depends on MACH_MSM8960_L_DCM
+#	default y
+#	help
+#	  Select this if you want to use Japanese 1Seg mobile broadcast service
+
+
+config LGE_BROADCAST_TDMB
+	bool "LGE broadcast TDMB device Driver"
+	depends on MACH_LGE_325_BOARD_SKT || MACH_LGE_325_BOARD_LGU || MACH_LGE_120_BOARD || MACH_LGE_IJB_BOARD_SKT || MACH_LGE_IJB_BOARD_LGU
+	default y
+	help
+	  Select this if you want to use TDMB broadcast service
+
+
+#source "drivers/broadcast/oneseg/Kconfig"
+source "drivers/broadcast/tdmb/Kconfig"
+endmenu

@@ -1,0 +1,14 @@
+#
+# Broadcast Device Driver Support
+#
+
+#menu "BROADCAST_DEVICE"
+
+config LGE_BROADCAST_TDMB_FC8050
+	bool "LGE broacast TDMB FC8050 device"
+	default y
+	depends on (LGE_BROADCAST_TDMB&&(MACH_LGE_325_BOARD_SKT || MACH_LGE_325_BOARD_LGU || MACH_LGE_120_BOARD || MACH_LGE_IJB_BOARD_SKT || MACH_LGE_IJB_BOARD_LGU ))
+	help
+	  Select this if you want to use broadcast service
+	  
+#endmenu

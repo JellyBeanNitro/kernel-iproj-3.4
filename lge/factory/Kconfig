@@ -1,0 +1,132 @@
+#platform.team@lge.com	2011.01
+
+config LGE_FACTORY
+	default y
+	bool "LGE factory Configuration"
+	help
+		LGE factory Configuration
+
+config LGE_ERROR_HANDLER
+	default y
+	bool "LGE error handler"
+	help
+		Enable LGE error handler
+
+config LGE_HANDLE_PANIC
+	default n
+	depends on LGE_ERROR_HANDLER
+	bool "LGE error handler"
+	help
+		Enable LGE error handler
+
+config LGE_HIDDEN_RESET_PATCH
+	depends on LGE_ERROR_HANDLER
+	default n
+	bool "LGE hidden reset"
+	help
+	  Enable LGE hidden reset
+	  
+config LGE_SILENT_RESET_PATCH
+	depends on LGE_ERROR_HANDLER
+	default y
+	bool "LGE silent reset"
+	help
+	  Enable LGE silent reset
+
+config LGE_SUPPORT_RAPI
+	depends on LGE_FACTORY
+	default y
+	bool "LGE Remote communcation api support"
+	help
+		LGE Remote communcation api support
+
+config LGE_DIAGTEST
+	depends on LGE_FACTORY
+	default y
+	bool "LGE TestMode Diag Support"
+	help
+		LGE TestMode Diag Supports
+
+config LGE_DIAG_KEYPRESS
+	depends on LGE_DIAGTEST
+	default y
+	bool "LGE UTS KEYPRESS Support"
+	help
+		LGE UTS KEYPRESS Supports
+
+config LGE_DIAG_UDM
+	depends on LGE_FACTORY
+	default y
+	bool "LGE UDM Support"
+	help
+		LGE UDM Supports
+
+config LGE_DIAG_SCREENSHOT
+	depends on LGE_FACTORY
+	default y
+	bool "LGE UTS SCREENSHOT Support"
+	help
+		LGE UTS SCREENSHOT Supports
+
+config LGE_DLOAD_SRD
+	depends on LGE_FACTORY
+	default y
+	bool "LGE Dload SelfRecoveryDownload Support"
+	help
+		LGE Dload SelfRecoveryDownload Support
+
+config LGE_EMMC_DIRECT_ACCESS
+	depends on LGE_DIAGTEST
+	default y
+	bool "LGE eMMC direct access driver"
+	help
+                LGE eMMC direct access driver
+
+config LGE_MANUAL_TEST_MODE
+        depends on LGE_FACTORY
+        default y
+        bool "LGE Manual Test Mode Support"
+        help
+                LGE Manual Test Mode Support
+
+config LGE_SMS_PC_TEST
+	depends on LGE_DIAGTEST
+        default n
+        bool "LGE CONFIG_LGE_SMS_PC_TEST Support"
+        help
+                LGE CONFIG_LGE_SMS_PC_TEST Support
+
+config LGE_DIAG_ERI
+        depends on LGE_FACTORY
+        default n
+        bool "LGE ERI Diag Support"
+        help
+                LGE ERI Diag Support
+
+config LGE_ERI_DOWNLOAD
+	depends on LGE_DIAGTEST
+        default n
+        bool "LGE ERI Download Support"
+        help
+                LGE ERI Download Support
+
+config LGE_DID_BACKUP
+	depends on LGE_DIAGTEST
+        default y
+        bool "LGE DID Backup Support"
+        help
+                LGE DID Backup Support
+
+config LGE_VOLD_SUPPORT_CRYPT
+	depends on LGE_DIAGTEST
+        default n
+        bool "LGE VOLD Crypt Support"
+        help
+                LGE VOLD Crypt Support
+
+config LGE_KERNEL_ROOTING_NV_INTERFACE
+	depends on LGE_DIAGTEST
+        default n
+        bool "LGE Kernel Rooting NV Interface Support"
+        help
+                LGE Kernel Rooting NV Interface Support

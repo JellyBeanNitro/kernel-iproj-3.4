@@ -1,0 +1,85 @@
+config BCMDHD_B2
+	tristate "Broadcom 4330 B2 wireless cards support"
+	depends on MMC
+	---help---
+	  This module adds support for wireless adapters based on
+	  Broadcom 4329/30 chipset.
+	  This driver uses the kernel's wireless extensions subsystem.
+	  If you choose to build a module, it'll be called dhd. Say M if
+	  unsure.
+
+config BCMDHD_FW_PATH
+	depends on BCMDHD_B2
+	string "Firmware path"
+	default "/system/etc/firmware/fw_bcmdhd.bin"
+	---help---
+	  Path to the firmware file.
+
+config BCMDHD_NVRAM_PATH
+	depends on BCMDHD_B2
+	string "NVRAM path"
+	default "/system/etc/wifi/bcmdhd.cal"
+	---help---
+	  Path to the calibration file.
+
+config BCMDHD_WEXT
+	bool "Enable WEXT support"
+	depends on BCMDHD_B2 && CFG80211 = n
+	select WIRELESS_EXT
+	select WEXT_PRIV
+	---help---
+	  Enables WEXT support
+
+config LGE_BCM432X_PATCH
+	bool "BCM432X Patch by LGE"
+	default y
+	depends on BCMDHD_B2
+
+config BCMDHD_CONFIG_PATH
+	depends on LGE_BCM432X_PATCH
+	string "Config path"
+	default "/data/misc/wifi/config"
+	---help---
+	  Path to the config file.
+
+config BCMDHD_GPIO_WL_RESET
+	depends on BCMDHD_B2
+	int "GPIO to the Reset"
+	default 34 
+	---help---
+	  GPIO to the Reset
+
+config BCMDHD_HOSTWAKEUP_USE_GPIO
+	depends on BCMDHD_B2
+	bool "Use GPIO to Host Wakeup"
+	select BCMDHD_HW_OOB
+	---help---
+	  Use GPIO to Host Wakeup
+
+config BCMDHD_HOSTWAKEUP_USE_SDIO
+	depends on BCMDHD_B2 && BCMDHD_HOSTWAKEUP_USE_GPIO = n
+	bool "Use SDIO pin to the Host Wakeup"
+	---help---
+	  Use SDIO pin to the Host Wakeup
+
+config BCMDHD_GPIO_WL_HOSTWAKEUP
+	depends on BCMDHD_B2 && BCMDHD_HOSTWAKEUP_USE_GPIO = y
+	int "GPIO to the Host Wakeup"
+	default 45
+	---help---
+	  GPIO to the Host Wakeup
+
+config BCMDHD_HW_OOB
+	depends on BCMDHD_B2 && BCMDHD_HOSTWAKEUP_USE_GPIO = y         
+	bool "Use H/W OOB to the Host Wakeup"
+	default n
+	---help---
+	  Use H/W OOB to the Host Wakeup
+
+config BCMDHD_USE_STATIC_BUF
+	depends on BCMDHD_B2
+	bool "Use static buffer in os_malloc"
+	default n
+	---help---
+	  Use static buffer in os_malloc
+
