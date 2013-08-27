@@ -151,6 +151,7 @@ struct section_info
 
 struct ghost_finger_ctrl {
 	volatile u8	 stage;
+	volatile u8 incoming_call;
 	int count;
 	int min_count;
 	int max_count;
@@ -275,6 +276,11 @@ enum{
 enum{
 	KEYGUARD_RESERVED,
 	KEYGUARD_ENABLE,
+};
+
+enum{
+	INCOMIMG_CALL_RESERVED,
+	INCOMIMG_CALL_TOUCH,
 };
 
 enum{

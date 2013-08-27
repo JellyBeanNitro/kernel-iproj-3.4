@@ -166,3 +166,5 @@ extern struct platform_device msm8660_rpm_device;
 #endif
 
 void __init msm_fb_register_device(char *name, void *data);
+
+unsigned int lge_get_uart_HSL0_mode(void);

@@ -47,17 +47,6 @@
 
 #ifdef CONFIG_LGE_SENSOR
 
-
-#define GPIO_AXIS_I2C_SDA		72	//GPIO I2C, for Accelerometer, Gyroscope
-#define GPIO_AXIS_I2C_SCL		73	//GPIO I2C, for Accelerometer, Gyroscope
-#define GPIO_SENSOR_I2C_SDA		116 //GSBI12_1, for Digital Compass, Proximity
-#define GPIO_SENSOR_I2C_SCL		115 //GSBI12_0, for Digital Compass, Proximity
-#define GPIO_3AXIS_INT 			38
-#define GPIO_GYRO_INT			37
-#define GPIO_COMPASS_INT		39
-#define GPIO_COMPASS_INT_1		124 
-#define GPIO_PROXIMITY_OUT_INT	41
-
 #ifdef CONFIG_LGE_PMIC8058_REGULATOR
 struct regulator *pm8058_l11; // for Sensor, +3V0_SENSOR 
 static int power_set_for_8058_l11(unsigned char onoff)
@@ -75,8 +64,6 @@ static int power_set_for_8058_l11(unsigned char onoff)
 	}	
 	if (onoff) 
 	{
-
-		
 		rc = regulator_set_voltage(pm8058_l11, 3000000, 3000000);
 		if (rc) {
 			pr_err("%s: line: %d, unable to set pm8058_l11 voltage to 3.0 V\n",__func__,__LINE__);
@@ -96,7 +83,7 @@ static int power_set_for_8058_l11(unsigned char onoff)
 			goto vreg_l11_fail;
 		}
 	}
-	printk(KERN_INFO "%s: line: %d\n", __func__, __LINE__);
+
 	return 0;
 	
 vreg_l11_fail:
@@ -107,125 +94,6 @@ vreg_l11_fail:
 }
 #endif
 
-/* eunmo.yang@lge.com [BSP/Sensor] 20110623 START */
-#ifdef CONFIG_LGE_SENSOR
-uint32_t sensor_pwr_mask = 0;
-static int sensor_common_power_set(unsigned char on, int sensor)
-{
-    int ret = 0;
-    printk(KERN_INFO "%s pwr_mask(%d), on(%d), sensor(%d)\n", __func__, sensor_pwr_mask, on, sensor);
-
-    if(on)
-    {
-        if(!sensor_pwr_mask)
-        {
-			
-			printk("			son			sensor_common_power_set --> Power on name : %d \n", sensor);
-			
-            ret = power_set_for_8058_l11(on);
-            if(ret !=0)
-                printk(KERN_ERR "%s, power on, pwr_mask=%d, sensor=%d\n", __func__,sensor_pwr_mask, sensor);
-        }
-        sensor_pwr_mask |= sensor;
-    }
-    else
-    {
-        if(sensor_pwr_mask)
-        {
-            sensor_pwr_mask &= ~sensor;
-
-            if(!sensor_pwr_mask)
-            {
-                ret = power_set_for_8058_l11(on);
-                if(ret !=0)
-                    printk(KERN_ERR "%s, power off, pwr_mask=%d, sensor=%d\n", __func__,sensor_pwr_mask, sensor);
-            }
-        }
-    }
-
-    return ret;
-}
-/* eunmo.yang@lge.com [BSP/Sensor] 20110623 END */
-
-static int sensor_power_on(int sensor)
-{
-    int ret = 0;
-    ret = sensor_common_power_set(1, sensor);
-    return ret;
-}
-
-static int sensor_power_off(int sensor)
-{
-    int ret = 0;
-    ret = sensor_common_power_set(0, sensor);
-    return ret;
-}
-#endif
-
-#ifdef CONFIG_LGE_SENSOR_ACCELEROMETER
-static int k3dh_init(void){return 0;}
-static void k3dh_exit(void){}
-
-struct k3dh_acc_platform_data accelerometer_pdata = {
-	.poll_interval = 100,
-	.min_interval = 0,
-	.g_range = 0x00,
-#if 0
-	.axis_map_x = 1,
-	.axis_map_y = 0,
-	.axis_map_z = 2,
-	.negate_x = 1,
-	.negate_y = 1,
-	.negate_z = 1,
-#endif
-	.init = k3dh_init,
-	.exit = k3dh_exit,
-	.power_on = sensor_power_on,
-	.power_off = sensor_power_off,	
-	.gpio_int1 = -1, //GPIO_3AXIS_INT,
-	.gpio_int2 = -1,
-};
-#endif //CONFIG_LGE_SENSOR_ACCELEROMETER
-
-#ifdef CONFIG_LGE_SENSOR_GYROSCOPE
-static int k3g_init(void){return 0;}
-static void k3g_exit(void){}
-struct k3g_platform_data gyroscope_pdata = {
-	.fs_range = 0x00 ,
-#if 0
-	.axis_map_x = 0,
-	.axis_map_y = 1,
-	.axis_map_z = 2,
-	.negate_x = 0,
-	.negate_y = 0,
-	.negate_z = 0,
-#endif
-	.init = k3g_init,
-	.exit = k3g_exit,
-	.power_on = sensor_power_on,
-	.power_off = sensor_power_off,
-};
-#endif //CONFIG_LGE_SENSOR_GYROSCOPE
-
-#ifdef CONFIG_LGE_SENSOR_DCOMPASS
-static int ami306_init(void){return 0;}
-static void ami306_exit(void){}
-static struct ami306_platform_data dcompss_pdata = {
-	.init = ami306_init,
-	.exit = ami306_exit,
-	.power_on = sensor_power_on,
-	.power_off = sensor_power_off,
-#if 0
-	.fdata_sign_x = 1,
-	.fdata_sign_y = 1,
-	.fdata_sign_z = -1,
-	.fdata_order0 = 1,
-	.fdata_order1 = 0,
-	.fdata_order2 = 2,
-#endif
-};
-#endif //CONFIG_LGE_SENSOR_DCOMPASS
-
 #if defined (CONFIG_LGE_PMIC8058_REGULATOR) && defined (CONFIG_LGE_SENSOR_PROXIMITY)
 static int sensor_power_pm8058_l15 = false;
 struct regulator *pm8058_l15; //for Proximity, RPM_VREG_ID_PM8058_L15
@@ -234,12 +102,10 @@ static int power_set_for_8058_l15(unsigned char onoff)
 	int rc = -EINVAL;
 	printk(KERN_INFO "%s: prox/als power line: %d, onoff(%d)\n", __func__, __LINE__, onoff);
 
-#if 1
 	if(sensor_power_pm8058_l15 == onoff){
 		printk(KERN_INFO "don't need to handle %s, onoff; %d", __func__, onoff);
 		return 0;
 	}	
-#endif
 	
 	if(!pm8058_l15) {
 		pm8058_l15 = regulator_get(NULL, "8058_l15");
@@ -281,6 +147,107 @@ vreg_l15_fail:
 }
 #endif 
 
+#ifdef CONFIG_LGE_SENSOR
+uint32_t sensor_pwr_mask = 0;
+static int sensor_common_power_set(unsigned char on, int sensor)
+{
+    int ret = 0;
+    printk(KERN_INFO "%s pwr_mask(%d), on(%d), sensor(%d)\n", __func__, sensor_pwr_mask, on, sensor);
+
+    if(on)
+    {
+        if(!sensor_pwr_mask)
+        {
+			
+			
+            ret = power_set_for_8058_l11(on);
+            if(ret !=0)
+                printk(KERN_ERR "%s, power on, pwr_mask=%d, sensor=%d\n", __func__,sensor_pwr_mask, sensor);
+        }
+        sensor_pwr_mask |= sensor;
+    }
+    else
+    {
+        if(sensor_pwr_mask)
+        {
+            sensor_pwr_mask &= ~sensor;
+
+            if(!sensor_pwr_mask)
+            {
+                ret = power_set_for_8058_l11(on);
+                if(ret !=0)
+                    printk(KERN_ERR "%s, power off, pwr_mask=%d, sensor=%d\n", __func__,sensor_pwr_mask, sensor);
+            }
+        }
+    }
+
+    return ret;
+}
+
+static int sensor_power_on(int sensor)
+{
+    int ret = 0;
+    ret = sensor_common_power_set(1, sensor);
+    return ret;
+}
+
+static int sensor_power_off(int sensor)
+{
+    int ret = 0;
+    ret = sensor_common_power_set(0, sensor);
+    return ret;
+}
+#endif
+
+#define GPIO_AXIS_I2C_SDA		72	
+#define GPIO_AXIS_I2C_SCL		73	
+#define GPIO_SENSOR_I2C_SDA		116 
+#define GPIO_SENSOR_I2C_SCL		115 
+#define GPIO_3AXIS_INT 			38
+#define GPIO_GYRO_INT			37
+#define GPIO_COMPASS_INT		39
+#define GPIO_PROXIMITY_OUT_INT	41
+
+#ifdef CONFIG_LGE_SENSOR_ACCELEROMETER
+static int k3dh_init(void){return 0;}
+static void k3dh_exit(void){}
+
+struct k3dh_acc_platform_data accelerometer_pdata = {
+	.poll_interval = 100,
+	.min_interval = 0,
+	.g_range = 0x00,
+	.init = k3dh_init,
+	.exit = k3dh_exit,
+	.power_on = sensor_power_on,
+	.power_off = sensor_power_off,	
+	.gpio_int1 = -1, //GPIO_3AXIS_INT,
+	.gpio_int2 = -1,
+};
+#endif //CONFIG_LGE_SENSOR_ACCELEROMETER
+
+#ifdef CONFIG_LGE_SENSOR_GYROSCOPE
+static int k3g_init(void){return 0;}
+static void k3g_exit(void){}
+struct k3g_platform_data gyroscope_pdata = {
+	.fs_range = 0x00 ,
+	.init = k3g_init,
+	.exit = k3g_exit,
+	.power_on = sensor_power_on,
+	.power_off = sensor_power_off,
+};
+#endif //CONFIG_LGE_SENSOR_GYROSCOPE
+
+#ifdef CONFIG_LGE_SENSOR_DCOMPASS
+static int ami306_init(void){return 0;}
+static void ami306_exit(void){}
+static struct ami306_platform_data dcompss_pdata = {
+	.init = ami306_init,
+	.exit = ami306_exit,
+	.power_on = sensor_power_on,
+	.power_off = sensor_power_off,
+};
+#endif //CONFIG_LGE_SENSOR_DCOMPASS
+
 #ifdef CONFIG_LGE_SENSOR_PROXIMITY
 static int sensor_proximity_power_set(unsigned char onoff)
 {
@@ -311,13 +278,6 @@ static unsigned sensor_config_power_on[] = {
 	GPIO_CFG(GPIO_3AXIS_INT, 0, GPIO_CFG_INPUT,  GPIO_CFG_NO_PULL, GPIO_CFG_2MA),
 	GPIO_CFG(GPIO_COMPASS_INT, 0, GPIO_CFG_INPUT,  GPIO_CFG_NO_PULL, GPIO_CFG_2MA),	
 };
-#if 0
-static unsigned sensor_config_power_off[] = {
-	GPIO_CFG(GPIO_GYRO_INT, 0, GPIO_CFG_INPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
-	GPIO_CFG(GPIO_3AXIS_INT, 0, GPIO_CFG_INPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),		
-	GPIO_CFG(GPIO_COMPASS_INT, 0, GPIO_CFG_INPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),			
-};
-#endif
 
 void __init sensor_power_init(void)
 {
@@ -357,10 +317,6 @@ void __init sensor_power_init(void)
 		}
 	}
 
-/*
-  actually, sensor datas used in register_i2c_devices()
-  but we modified datas hear according to "hardware revision"
-*/
 #ifdef CONFIG_LGE_SENSOR_ACCELEROMETER
     accelerometer_pdata.axis_map_x = 0;
    	accelerometer_pdata.axis_map_y = 1;
@@ -368,10 +324,6 @@ void __init sensor_power_init(void)
    	accelerometer_pdata.negate_x = 0;
    	accelerometer_pdata.negate_y = 1;
    	accelerometer_pdata.negate_z = 1;
-  
-   
-
-
 #endif //CONFIG_LGE_SENSOR_ACCELEROMETER
 
 #ifdef CONFIG_LGE_SENSOR_GYROSCOPE
@@ -472,6 +424,4 @@ void __init i2c_register_input_sensor_info(void){
 	}
 }
 #endif /*CONFIG_I2C*/
-
-
 #endif //CONFIG_LGE_SENSOR

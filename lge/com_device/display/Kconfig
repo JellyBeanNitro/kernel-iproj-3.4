@@ -6,12 +6,6 @@ config LGE_BACKLIGHT_LM3530
 	---help---
 	LGE backlight management (lm3530)
 
-config LGE_DISPLAY_MIPI_LGIT_VIDEO_HD_PT
-	bool "LGE_DISPLAY_MIPI_LGIT_VIDEO_HD_PT"
-	select FB_MSM_MIPI_DSI
-	---help---
-	LGE display management
-
 config LGE_DISPLAY_MIPI_LGIT_IJB_VIDEO_HD_PT
 	bool "LGE_DISPLAY_MIPI_LGIT_IJB_VIDEO_HD_PT"
 	select FB_MSM_MIPI_DSI
@@ -76,12 +70,5 @@ config LGE_SHOW_FB_BOOTLOGO
 	depends on MACH_LGE_120_BOARD
 	---help---
 	Select this feature to show boot animation from the frame buffer driver
-
-config LGE_K_CAL
-    bool "K_calibration for lcd tunning"
-    default n
-	depends on MACH_LGE_120_BOARD
-    ---help---
-    select this feature for kcal function enable
 
 endmenu

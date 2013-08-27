@@ -711,7 +711,7 @@ static int msm_server_s_ctrl(struct msm_cam_v4l2_device *pcam,
 	ctrlcmd.length = sizeof(struct v4l2_control);
 	ctrlcmd.value = (void *)ctrl_data;
 	memcpy(ctrlcmd.value, ctrl, ctrlcmd.length);
-	ctrlcmd.timeout_ms = 1000;
+	ctrlcmd.timeout_ms = 5000;
 	ctrlcmd.vnode_id = pcam->vnode_id;
 	ctrlcmd.queue_idx = pcam->server_queue_idx;
 	ctrlcmd.config_ident = g_server_dev.config_info.config_dev_id[0];
@@ -743,7 +743,7 @@ static int msm_server_g_ctrl(struct msm_cam_v4l2_device *pcam,
 	ctrlcmd.length = sizeof(struct v4l2_control);
 	ctrlcmd.value = (void *)ctrl_data;
 	memcpy(ctrlcmd.value, ctrl, ctrlcmd.length);
-	ctrlcmd.timeout_ms = 1000;
+	ctrlcmd.timeout_ms = 5000;
 	ctrlcmd.vnode_id = pcam->vnode_id;
 	ctrlcmd.queue_idx = pcam->server_queue_idx;
 	ctrlcmd.config_ident = g_server_dev.config_info.config_dev_id[0];
@@ -3357,7 +3357,7 @@ probe_fail:
 	return NULL;
 }
 
-#if !defined(CONFIG_LGE_SENSOR_IMX105) // for Batman and Cayman
+#if !defined(CONFIG_LGE_SENSOR_IMX105)
 static struct v4l2_subdev *msm_eeprom_probe(
 	struct msm_eeprom_info *eeprom_info)
 {
@@ -3421,7 +3421,7 @@ int msm_sensor_register(struct v4l2_subdev *sensor_sd)
 	sdata = (struct msm_camera_sensor_info *) s_ctrl->sensordata;
 
 	pcam->act_sdev = msm_actuator_probe(sdata->actuator_info);
-#if !defined(CONFIG_LGE_SENSOR_IMX105) // for Batman and Cayman
+#if !defined(CONFIG_LGE_SENSOR_IMX105)
 	pcam->eeprom_sdev = msm_eeprom_probe(sdata->eeprom_info);
 #endif
 

@@ -195,11 +195,11 @@ static void k3dh_acc_late_resume(struct early_suspend *h);
 
 #define DRV_NAME            "k3dh"
 
-/*                     
-                                                                    
-                 
-               
-               
+/* LGE Debug mask value
+ * usage: echo [mask_value] > /sys/module/k3dh/parameters/debug_mask
+ * All      : 255
+ * No msg   : 0
+ * default  : 2
 */
 enum {
   DEBUG_ERR_CHECK     = 1U << 0,

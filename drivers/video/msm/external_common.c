@@ -830,6 +830,22 @@ static ssize_t hdmi_common_rda_hdmi_primary(struct device *dev,
 	DEV_DBG("%s: '%d'\n", __func__,	hdmi_prim_display);
 	return ret;
 }
+#ifdef CONFIG_LGE_MHL_SII9244
+static ssize_t hdmi_common_wta_boot_completed(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	ssize_t ret = strnlen(buf, PAGE_SIZE);
+
+	if(external_common_state->hpd_feature_on &&
+		!external_common_state->boot_completed){
+		DEV_DBG("%s: hpd_power_on \n",__func__);
+		external_common_state->hpd_feature(1);
+	}
+	external_common_state->boot_completed = 1;
+
+	return ret;
+}
+#endif
 
 static DEVICE_ATTR(video_mode, S_IRUGO | S_IWUGO,
 	external_common_rda_video_mode, external_common_wta_video_mode);
@@ -861,6 +877,9 @@ static DEVICE_ATTR(format_3d, S_IRUGO | S_IWUGO, hdmi_3d_rda_format_3d,
 	hdmi_3d_wta_format_3d);
 #endif
 static DEVICE_ATTR(hdmi_primary, S_IRUGO, hdmi_common_rda_hdmi_primary, NULL);
+#ifdef CONFIG_LGE_MHL_SII9244
+static DEVICE_ATTR(hdmi_boot_completed, S_IWUGO, NULL, hdmi_common_wta_boot_completed);
+#endif
 
 static struct attribute *external_common_fs_attrs[] = {
 	&dev_attr_video_mode.attr,
@@ -889,6 +908,9 @@ static struct attribute *external_common_fs_attrs[] = {
 	&dev_attr_cec_wr_frame.attr,
 #endif /* CONFIG_FB_MSM_HDMI_MSM_PANEL_CEC_SUPPORT */
 	&dev_attr_hdmi_primary.attr,
+#ifdef CONFIG_LGE_MHL_SII9244
+	&dev_attr_hdmi_boot_completed.attr,
+#endif
 	NULL,
 };
 static struct attribute_group external_common_fs_attr_group = {
@@ -2140,8 +2162,8 @@ void hdmi_common_init_panel_info(struct msm_panel_info *pinfo)
 
 	/* blk */
 	pinfo->lcdc.border_clr = 0;
-	/* blue */
-	pinfo->lcdc.underflow_clr = 0xff;
+	/* blue : 0xff, blk : 0*/
+	pinfo->lcdc.underflow_clr = 0;
 	pinfo->lcdc.hsync_skew = 0;
 }
 EXPORT_SYMBOL(hdmi_common_init_panel_info);
@@ -2160,31 +2182,22 @@ void hdmi_common_send_uevent(char *buf)
 
 EXPORT_SYMBOL(hdmi_common_send_uevent);
 
-/* I-project scenario - HPD on when MHL cable is detected
- */
-extern boolean hdmi_msm_panel_power(void);
-
 void hdmi_common_set_hpd(int on)
 {
-	int count = 0;
-
-	if(on == 1){
-		for(count = 0 ; count < 50 ; count++){
-			if(!hdmi_msm_panel_power()){
-				DEV_DBG("hdmi_common_set_hpd: count[%d]\n",count);
-				break;
+	if (external_common_state->hpd_feature) {
+		if (on) {
+			if(external_common_state->boot_completed){
+				DEV_DBG("%s : hpd_power_on \n",__func__);
+				external_common_state->hpd_feature(1);
 			}
-			msleep(10);
+			external_common_state->hpd_feature_on = 1;
+
+		} else {
+			external_common_state->hpd_feature_on = 0;
 		}
 
-		external_common_state->hpd_feature(1);
-		external_common_state->hpd_feature_on = 1;
-		external_common_state->cable_connected = 0;
-	}
-	else{
-		//external_common_state->hpd_feature(0);        
-		external_common_state->hpd_feature_on = 0;
-		external_common_state->cable_connected = 0;
+	} else {
+		DEV_DBG("%s: 'not supported'\n", __func__);
 	}
 }
 

@@ -492,7 +492,7 @@ static acc_cable_type get_ta_cable_type(void)
 	{
 		cable_type = TA_CABLE_800MA;
 	}
-#elif defined(CONFIG_MACH_LGE_I_BOARD_SKT)
+#elif defined(CONFIG_MACH_LGE_I_BOARD_SKT) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
 	if((0<=acc_read_value)&&(acc_read_value<=70))
 	{
 		cable_type = MHL_CABLE_500MA;
@@ -592,7 +592,8 @@ static acc_cable_type get_usb_cable_type(void)
 	acc_cable_type cable_type = 0;
 
 	acc_read_value = acc_read_adc(CHANNEL_ADC_ACC, NULL);
-	//pr_err("%s: usb_acc_valid_read_value is %d\n", __func__, acc_read_value);
+
+	pr_err("%s: usb_acc_valid_read_value is %d\n", __func__, acc_read_value);
 
 #if defined(CONFIG_MACH_LGE_I_BOARD_VZW)
 	if((340<=acc_read_value)&&(acc_read_value<=600)) // 56k ==>LT cable, maximum current
@@ -641,7 +642,7 @@ static acc_cable_type get_usb_cable_type(void)
 		cable_type = ABNORMAL_USB_CABLE_400MA;
 	}
 
-#elif defined(CONFIG_MACH_LGE_I_BOARD_SKT)
+#elif defined(CONFIG_MACH_LGE_I_BOARD_SKT) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
 	if((340<=acc_read_value)&&(acc_read_value<=600))
 	{
 	  cable_type = LT_CABLE_56K;

@@ -2612,6 +2612,16 @@ struct usb_phy_io_ops msm_otg_io_ops = {
 	.write = usb_ulpi_write,
 };
 
+static void msm_otg_reset(struct msm_otg *dev)
+{
+	int ret = 0;
+	int n = 0;
+	for ( n=0; n<100 ; n++ ) {
+		ret = msm_otg_phy_reset(dev);
+		if ( ret == 0 ) break;
+	}
+}
+
 static int __init msm_otg_probe(struct platform_device *pdev)
 {
 	int ret = 0;
@@ -2883,6 +2893,7 @@ static int __init msm_otg_probe(struct platform_device *pdev)
 	}
 #endif
 
+	msm_otg_reset(dev);
 
 	return 0;
 

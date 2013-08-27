@@ -422,7 +422,7 @@ static int __init msm_restart_init(void)
 	/*                            
                           */
 #if defined(CONFIG_LGE_ERROR_HANDLER)	/*                                        */
-	//__raw_writel(0x6d63ad00, restart_reason);
+	__raw_writel(0x6d63ad00, restart_reason);
 	set_dload_mode(0);
 #endif
 

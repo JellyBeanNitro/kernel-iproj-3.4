@@ -203,7 +203,7 @@ static ssize_t pseudo_batt_store_property(struct device *dev,
 		const char *buf, size_t count)
 {
 	int ret = -EINVAL;
-#ifdef CONFIG_MACH_LGE_120_BOARD
+#if defined(CONFIG_MACH_LGE_120_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
 	struct power_supply *psy = dev_get_drvdata(dev);
 	const ptrdiff_t off = attr - power_supply_attrs;
 	union power_supply_propval value;
@@ -220,7 +220,7 @@ static ssize_t pseudo_batt_store_property(struct device *dev,
 		}
 	}
 	//pseudo_batt_set(&info);
-#ifdef CONFIG_MACH_LGE_120_BOARD
+#if defined(CONFIG_MACH_LGE_120_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
 	pseudo_batt_set(&info);
 	value.intval = info.mode;
 	ret = psy->set_property(psy, off, &value);
@@ -248,7 +248,7 @@ static ssize_t block_charging_store_property(struct device *dev,
 	}
 	printk("%s:block charging=%d\n",__func__,block);
 	//batt_block_charging_set(block);
-#ifdef CONFIG_MACH_LGE_120_BOARD
+#if defined(CONFIG_MACH_LGE_120_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
 	batt_block_charging_set(block);
 #endif
 	ret = count;

@@ -108,7 +108,6 @@
 #define MSM_UART9DM_PHYS    (MSM_GSBI9_PHYS + 0x40000)
 #define INT_UART9DM_IRQ     GSBI9_UARTDM_IRQ
 
-//                        
 #ifdef CONFIG_LGE_MDM_PMIC_8028
 #include <mach/msm_xo.h>
 #endif
@@ -116,6 +115,26 @@
 #ifdef CONFIG_MSM_SUBSYSTEM_RESTART //                       
 extern int charm_boot_mode(void);
 #endif
+
+static unsigned int uart_console_HSL0_mode = 0;
+
+unsigned int lge_get_uart_HSL0_mode(void)
+{
+	return uart_console_HSL0_mode;
+}
+
+
+static int __init lge_uart_mode(char *uart_console_mode)
+{
+	if(strstr(uart_console_mode, "ttyHSL0"))
+	{
+		printk(KERN_INFO"[LGE Device] uart ttyHSL0 detected\n");
+		uart_console_HSL0_mode = 1;
+	}
+	return 0;
+}
+__setup("console=", lge_uart_mode);
+
 static void charm_ap2mdm_kpdpwr_on(void)
 {
 	gpio_direction_output(AP2MDM_PMIC_RESET_N, 0);

@@ -600,6 +600,8 @@ static int increase_vdd(int cpu, unsigned int vdd_sc, unsigned int vdd_mem,
 			unsigned int vdd_dig, enum setrate_reason reason)
 {
 	int rc = 0;
+	if (vdd_sc > vdd_mem || vdd_dig > vdd_mem)
+		vdd_mem = max(vdd_sc, vdd_dig);
 
 	/* Increase vdd_mem active-set before vdd_dig and vdd_sc.
 	 * vdd_mem should be >= both vdd_sc and vdd_dig. */
@@ -643,7 +645,8 @@ static void decrease_vdd(int cpu, unsigned int vdd_sc, unsigned int vdd_mem,
 			 unsigned int vdd_dig, enum setrate_reason reason)
 {
 	int ret;
-
+	if ( vdd_sc > vdd_mem || vdd_dig > vdd_mem)
+		vdd_mem = max(vdd_sc, vdd_dig);
 	/* Update per-core Scorpion voltage. This must be called on the CPU
 	 * that's being affected. Don't do this in the hotplug remove path,
 	 * where the rail is off and we're executing on the other CPU. */
@@ -984,13 +987,14 @@ static struct notifier_block __cpuinitdata acpuclock_cpu_notifier = {
 	.notifier_call = acpuclock_cpu_callback,
 };
 
+static int boost_uv_f2;
+
 static __init struct clkctl_acpu_speed *select_freq_plan(void)
 {
 	uint32_t pte_efuse, speed_bin, pvs;
 	struct clkctl_acpu_speed *f;
 
 	pte_efuse = readl_relaxed(QFPROM_PTE_EFUSE_ADDR);
-
 	speed_bin = pte_efuse & 0xF;
 	if (speed_bin == 0xF)
 		speed_bin = (pte_efuse >> 4) & 0xF;
@@ -1045,6 +1049,13 @@ static __init struct clkctl_acpu_speed *select_freq_plan(void)
 		}
 	} else {
 		acpu_freq_tbl = acpu_freq_tbl_1188mhz;
+	}
+
+	boost_uv_f2 = 50000;
+	for (f = acpu_freq_tbl; f->acpuclk_khz != 0; f++){
+		f->vdd_sc = f->vdd_sc + boost_uv_f2;
+		if (f->l2_level->vdd_mem < f->vdd_sc)
+				f->l2_level->vdd_mem += boost_uv_f2;
 	}
 
 	for (f = acpu_freq_tbl; f->acpuclk_khz != 0; f++)

@@ -251,7 +251,7 @@ static unsigned short GetFirmwareSize(struct synaptics_fw_data *fw)
 static int RMI4ReadBootloadID(struct synaptics_fw_data *fw, struct synaptics_ts_data *ts)
 {
 	int ret;
-	char uData[2];
+	char uData[2] = {0};
 
 	ret = SynaReadRegister(ts->client,
 			fw->m_uF34ReflashQuery_BootID, (unsigned char *)uData, 2);
@@ -421,7 +421,7 @@ static int RMI4EnableFlashing(struct synaptics_fw_data *fw, struct synaptics_ts_
 static int RMI4ReadConfigInfo(struct synaptics_fw_data *fw, struct synaptics_ts_data *ts)
 {
 	int ret;
-	u8 uData[2];
+	u8 uData[2] = {0};
 
 	ret = SynaReadRegister(ts->client, fw->m_uF34ReflashQuery_ConfigBlockSize, &uData[0], 2);
 	if (ret < 0) {
@@ -447,7 +447,7 @@ static int RMI4ReadConfigInfo(struct synaptics_fw_data *fw, struct synaptics_ts_
 static int RMI4ProgramConfiguration(struct synaptics_fw_data *fw, struct synaptics_ts_data *ts)
 {
 	int ret=-1;
-	unsigned char uData[2];
+	unsigned char uData[2] = {0};
 	unsigned char *puData = fw->m_configImgData;
 	unsigned short blockNum = 0;
 
@@ -513,7 +513,7 @@ static int RMI4ResetDevice(struct synaptics_fw_data *fw, struct synaptics_ts_dat
 {
 	int ret;
 	unsigned short m_uF01DeviceControl_CommandReg = fw->m_PdtF01Common.m_CommandBase;
-	unsigned char uData[1];
+	unsigned char uData[1] = {0};
 
 	uData[0] = 1;
 	ret = SynaWriteRegister(ts->client, m_uF01DeviceControl_CommandReg, &uData[0], 1);
@@ -620,7 +620,7 @@ static unsigned char RMI4FlashFirmwareWrite(struct synaptics_fw_data *fw, struct
 {
 	int ret = 0;
 	unsigned char *puFirmwareData = fw->m_firmwareImgData;
-	unsigned char uData[2];
+	unsigned char uData[2] = {0};
 	u16 uBlockNum = 0;
 
 	if (touch_debug_mask & DEBUG_FW_UPGRADE)
@@ -680,7 +680,7 @@ static unsigned char RMI4FlashFirmwareWrite(struct synaptics_fw_data *fw, struct
 static int RMI4ProgramFirmware(struct synaptics_fw_data *fw, struct synaptics_ts_data *ts)
 {
 	int ret;
-	unsigned char uData[1];
+	unsigned char uData[1] = {0};
 
 	if (touch_debug_mask & DEBUG_FW_UPGRADE)
 		TOUCH_DEBUG_MSG("RMI4ProgramFirmware start\n");

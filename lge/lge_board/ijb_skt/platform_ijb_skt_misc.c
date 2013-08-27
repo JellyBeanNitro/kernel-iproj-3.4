@@ -87,13 +87,10 @@ static int lge_isa1200_clock(int enable, int amp)
 static struct isa1200_reg_cmd isa1200_init_seq[] = {
 
 	{LGE_ISA1200_HCTRL2, 0x00},		/* bk : release sw reset */
-
 	{LGE_ISA1200_SCTRL , 0x0F}, 		/* LDO:3V */
-
 	{LGE_ISA1200_HCTRL0, 0x10},		/* [4:3]10 : PWM Generation Mode [1:0]01 : Divider 1/256 */
 	{LGE_ISA1200_HCTRL1, 0xC0},		/* [7] 1 : Ext. Clock Selection, [5] 0:LRA, 1:ERM */
 	{LGE_ISA1200_HCTRL3, 0x33},		/* [6:4] 1:PWM/SE Generation PLL Clock Divider */
-
 	{LGE_ISA1200_HCTRL4, 0x81},		/* bk */
 	{LGE_ISA1200_HCTRL5, 0x3a},		/* [7:0] PWM High Duty(PWM Gen) 0-6B-D6 */ /* TODO make it platform data? */
 	{LGE_ISA1200_HCTRL6, 0x74},		/* [7:0] PWM Period(PWM Gen) */ /* TODO make it platform data? */

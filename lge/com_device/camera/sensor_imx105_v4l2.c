@@ -18,8 +18,18 @@
 #define imx105_obj imx105_##obj
 
 #ifdef CONFIG_LGE_SENSOR_IMX105
-//#undef CDBG
-//#define CDBG(fmt, args...) pr_err(fmt, ##args)
+
+#ifdef CONFIG_MSM_CAMERA_DEBUG_IMX105
+  #ifdef CDBG
+  #undef CDBG
+  #endif
+  #define CDBG(fmt, args...) do { } while (0)
+#else
+  #ifdef CDBG
+  #undef CDBG
+  #endif
+  #define CDBG(fmt, args...) do { } while (0)
+#endif
 
 #define 		USE_LG_fast_af
 #endif
@@ -359,7 +369,7 @@ static struct msm_sensor_output_info_t imx105_dimensions[] = {
 		.line_length_pclk = 0x0DD0, 
 		.frame_length_lines = 0x04F6, // Imx111 -> 0x4E6, /* 1254 */
 		.vt_pixel_clk = 134400000, //174000000,
-		.op_pixel_clk = 134400000, // mo2jonghoo.lee 2013.02.01 69600000,
+		.op_pixel_clk = 67200000, // mo2jonghoo.lee 2013.02.01 69600000,
 /*
 [IMX105 JB] refer to mt9e013
 .vt_pixel_clk = 192000000, //174000000,

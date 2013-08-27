@@ -2793,8 +2793,17 @@ static struct rtable *ip_route_output_slow(struct net *net, struct flowi4 *fl4)
 		fl4->saddr = FIB_RES_PREFSRC(net, res);
 
 	dev_out = FIB_RES_DEV(res);
-	fl4->flowi4_oif = dev_out->ifindex;
 
+#if defined(CONFIG_MACH_LGE_325_BOARD_VZW) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU)
+    if( dev_out != NULL ) {
+        fl4->flowi4_oif = dev_out->ifindex;
+    } else {
+        rth = ERR_PTR(-ENETUNREACH);
+        goto out;
+    }
+#else
+    fl4->flowi4_oif = dev_out->ifindex;
+#endif
 
 make_route:
 	rth = __mkroute_output(&res, fl4, orig_daddr, orig_saddr, orig_oif,

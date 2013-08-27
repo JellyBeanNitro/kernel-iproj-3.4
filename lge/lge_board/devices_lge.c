@@ -76,7 +76,7 @@ __setup("lge.rev=", board_revno_setup);
 #define KEY_SHARP 228
 
 static unsigned short atcmd_virtual_keycode[ATCMD_VIRTUAL_KEYPAD_ROW][ATCMD_VIRTUAL_KEYPAD_COL] = {
-	{KEY_1,          KEY_8,           KEY_Q,          KEY_I,          KEY_D,          KEY_HOME,       KEY_B,          KEY_UP},
+	{KEY_1,          KEY_8,           KEY_UNKNOWN/*KEY_Q*/,          KEY_I,          KEY_D,          KEY_HOME,       KEY_B,          KEY_UP},
 	{KEY_2,          KEY_9,           KEY_W,          KEY_O,          KEY_F,          KEY_RIGHTSHIFT, KEY_N,          KEY_DOWN},
 	{KEY_3,          KEY_0,           KEY_E,          KEY_P,          KEY_G,          KEY_Z,          KEY_M,          KEY_UNKNOWN},
 	{KEY_4,          KEY_BACK,        KEY_R,          KEY_SEARCH,     KEY_H,          KEY_X,          KEY_LEFTSHIFT,  KEY_UNKNOWN},

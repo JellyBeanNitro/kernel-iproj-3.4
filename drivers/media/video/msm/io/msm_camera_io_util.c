@@ -365,6 +365,8 @@ int msm_camera_config_gpio_table(struct msm_camera_sensor_info *sinfo,
 		sinfo->sensor_platform_info->gpio_conf;
 	int rc = 0, i;
 
+	pr_err("%s: gpio_set_tbl_size : %d\n", __func__,gpio_conf->cam_gpio_set_tbl_size);
+
 	if (gpio_en) {
 		for (i = 0; i < gpio_conf->cam_gpio_set_tbl_size; i++) {
 			gpio_set_value_cansleep(

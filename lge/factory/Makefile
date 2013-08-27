@@ -1,4 +1,5 @@
 EXTRA_CFLAGS += -Ilge/include
+EXTRA_CFLAGS += -Iarch/arm/mach-msm
 obj-$(CONFIG_LGE_SUPPORT_RAPI) += LG_rapi_client.o
 obj-$(CONFIG_LGE_DIAGTEST) += lg_diag_testmode.o
 obj-$(CONFIG_LGE_SMS_PC_TEST) += lg_diag_unifiedmsgtool.o

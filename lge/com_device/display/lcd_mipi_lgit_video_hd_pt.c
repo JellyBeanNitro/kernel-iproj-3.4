@@ -84,7 +84,7 @@ static int __init mipi_video_lgit_wvga_pt_init(void)
 	pinfo.lcdc.v_front_porch = 8;
 	pinfo.lcdc.v_pulse_width = 2;
 	pinfo.lcdc.border_clr = 0;	/* blk */
-	pinfo.lcdc.underflow_clr = 0xff;	/* blue */
+	pinfo.lcdc.underflow_clr = 0;	/* blk */
 	pinfo.lcdc.hsync_skew = 0;
 	pinfo.bl_max = 0x7F;
 	pinfo.bl_min = 0;

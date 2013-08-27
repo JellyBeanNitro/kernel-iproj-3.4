@@ -276,10 +276,18 @@ static void charm_status_fn(struct work_struct *work)
 #ifdef CONFIG_LGE_SDIO_DEBUG_CH	/*                                        */
 	uls_mdm_status_low_flag = true; //                                                        
 #endif /*                        */
-	subsystem_restart("external_modem");
+    if (gpio_get_value(MDM2AP_STATUS) == 1)
+    {
+      CHARM_DBG("%s: ESD stupid hw\n",__func__);
+    }
+    else
+    {
+      pr_info("Reseting the charm because status changed\n");
+      subsystem_restart("external_modem");
+    }
 }
 
-static DECLARE_WORK(charm_status_work, charm_status_fn);
+static DECLARE_DELAYED_WORK(charm_status_work, charm_status_fn);
 
 static void charm_fatal_fn(struct work_struct *work)
 {
@@ -314,7 +322,7 @@ static irqreturn_t charm_status_change(int irq, void *dev_id)
 	CHARM_DBG("%s: charm sent status change interrupt\n", __func__);
 	if ((gpio_get_value(MDM2AP_STATUS) == 0) && charm_ready) {
 		CHARM_DBG("%s: scheduling work now\n", __func__);
-		queue_work(charm_queue, &charm_status_work);
+		queue_delayed_work(charm_queue, &charm_status_work, msecs_to_jiffies(10));
 	} else if (gpio_get_value(MDM2AP_STATUS) == 1) {
 		CHARM_DBG("%s: charm is now ready\n", __func__);
 

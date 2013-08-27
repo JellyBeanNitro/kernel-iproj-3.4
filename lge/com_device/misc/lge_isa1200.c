@@ -26,9 +26,7 @@
     the mode may consume power a little bit more.
 */
 
-#if !defined(CONFIG_MACH_LGE_325_BOARD_VZW) && !defined(CONFIG_MACH_LGE_325_BOARD_LGU)
 #define CONFIG_PRE_INITIAL_CODE
-#endif
 
 #include <linux/module.h>
 #include <linux/init.h>
@@ -110,7 +108,7 @@ static int lge_isa1200_hw_init(struct lge_isa1200_context *context)
 #endif
 	struct i2c_client *client = context->client;
 
-	dev_dbg(context->dev.dev, "%s()\n", __func__);
+	dev_info(context->dev.dev, "%s()\n", __func__);
 
 #ifdef CONFIG_PRE_INITIAL_CODE
 	gpio_set_value_cansleep(context->pdata->gpio_hen, 1);
@@ -149,42 +147,21 @@ static int lge_isa1200_hw_vib_on_off(struct lge_isa1200_context *context, bool o
 
 	dev_info(context->dev.dev, "%s(%d), level = %d\n", __func__, on_off, atomic_read(&(context->vibe_level)));
 
-#if defined(CONFIG_MACH_LGE_325_BOARD_LGU)
-	if (atomic_read(&(context->vibe_level)) <= 0) {
-		on_off = false;
-	}
-#endif
-
 	if (on_off)	{
-		//if (context->pdata->power) context->pdata->power(true);
 		if (context->pdata->clock) context->pdata->clock(true, atomic_read(&(context->vibe_level)));
 #ifndef CONFIG_PRE_INITIAL_CODE
 		gpio_set_value_cansleep(context->pdata->gpio_hen, 1);
 		lge_isa1200_hw_init(context);
 #endif
-#if defined(CONFIG_MACH_LGE_325_BOARD_VZW) || defined(CONFIG_MACH_LGE_325_BOARD_LGU)
-		lge_isa1200_write_reg(client, LGE_ISA1200_HCTRL1, 0x40 );	/* [7:0] PWM High Duty(PWM Gen) 0-6B-D6 */
-		lge_isa1200_write_reg(client, LGE_ISA1200_HCTRL0, 0x8a );						/* [7]Haptic Drive Enable Mode */
-#else
 		lge_isa1200_write_reg(client, LGE_ISA1200_HCTRL5, atomic_read(&(context->vibe_level)) );	/* [7:0] PWM High Duty(PWM Gen) 0-6B-D6 */
 		lge_isa1200_write_reg(client, LGE_ISA1200_HCTRL0, 0x10 + (on_off<<7));						/* [7]Haptic Drive Enable Mode */
-#endif
 	} else {
 #ifdef CONFIG_PRE_INITIAL_CODE
 		lge_isa1200_write_reg(client, LGE_ISA1200_HCTRL0, 0x10 + (on_off<<7));            /* [7]Haptic Drive Enable Mode */
 #else
-		if(gpio_get_value_cansleep(context->pdata->gpio_hen)) {
-#if defined(CONFIG_MACH_LGE_325_BOARD_VZW) || defined(CONFIG_MACH_LGE_325_BOARD_LGU)
-
-			lge_isa1200_write_reg(client, LGE_ISA1200_HCTRL0, 0x1a);			  /* [7]Haptic Drive Enable Mode */
-#else
-			lge_isa1200_write_reg(client, LGE_ISA1200_HCTRL0, 0x10 + (on_off<<7));            /* [7]Haptic Drive Enable Mode */
-#endif
-		}
 		gpio_set_value_cansleep(context->pdata->gpio_hen, 0);
 #endif
 		if (context->pdata->clock) context->pdata->clock(false, 0);
-		//if (context->pdata->power) context->pdata->power(false);
 	}
 
 	return 0;
@@ -235,7 +212,7 @@ static void lge_isa1200_vibrator_enable(struct timed_output_dev *dev, int value)
 	int ret;
 */
 
-	//dev_info(dev->dev, "%s(%d)\n", __func__, value);
+	dev_info(dev->dev, "%s(%d)\n", __func__, value);
 /*
 	ret = mutex_lock_interruptible(&context->lock);
 	if (ret > 0) {
@@ -281,12 +258,12 @@ static ssize_t lge_isa1200_vibrator_amp_store(struct device *dev, struct device_
 	struct lge_isa1200_context *vib = container_of(dev_, struct lge_isa1200_context, dev);
     int gain;
 
-	dev_dbg(dev, "%s(%s)\n", __func__, buf);
+	dev_info(dev, "%s(%s)\n", __func__, buf);
 
     sscanf(buf, "%d", &gain);
 
     /* TODO range check */
-	dev_dbg(dev, "vib_gain is set by value=%d\n", gain);
+	dev_info(dev, "vib_gain is set by value=%d\n", gain);
 
     atomic_set(&vib->vibe_level, gain);
 
@@ -372,12 +349,10 @@ static ssize_t codec_debug_write(struct file *filp,
         break;
         case 2:
         {
-          //                                                                                             
           //lge_isa1200_write_reg(client, 0x35, (unsigned char)param[1]);    // [7:0] PWM High Duty(PWM Gen) 0-6B-D6
         }
         case 3:
         {
-          //                                                                                            
           //lge_isa1200_write_reg(client, 0x30, VAL_0x30+(param[1]<<7));    	// [7]Haptic Drive Enable Mode
         }
         break;
@@ -475,15 +450,11 @@ static int __devinit lge_isa1200_probe(struct i2c_client *client,
 	ret = timed_output_dev_register(&context->dev);
 	if (ret < 0) goto fail_3;
 
-#if !defined(CONFIG_MACH_LGE_325_BOARD_VZW) && !defined(CONFIG_MACH_LGE_325_BOARD_LGU)
     /* turn off vibrator (initialization) */
-	lge_isa1200_hw_vib_on_off(context, false);
-#endif
-
-
 #ifdef CONFIG_PRE_INITIAL_CODE
 	lge_isa1200_hw_init(context);
 #endif
+	lge_isa1200_hw_vib_on_off(context, false);
 
 	ret = device_create_file(context->dev.dev, &dev_attr_amp);
 	if (ret < 0) goto fail_4;
@@ -496,7 +467,6 @@ static int __devinit lge_isa1200_probe(struct i2c_client *client,
           debugfs_poke = debugfs_create_file("poke",
           S_IFREG | S_IRUGO, debugfs_timpani_dent,
           (void *) "poke", &codec_debug_ops);
-
         }
 #endif
 

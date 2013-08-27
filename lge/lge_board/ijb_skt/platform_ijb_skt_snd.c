@@ -59,9 +59,6 @@
 #include "devices_ijb_skt.h"
 #include "wm9093.h"
 
-//                                           
-
-//                                                                  
 #include <linux/fs.h>
 #include <linux/fcntl.h> 
 #include <linux/string.h>
@@ -211,7 +208,6 @@ typedef struct {
 
 const char* LGE_WM9093_CALIBRATION_TOOL = "wm9093";
 const char* LGE_QTR8615L_CALIBRATION_TOOL = "qtr8615l";
-//                                                                  
 
 /* QTR Line ==> WM9093 IN2 ==> SPK */
 static wmCodecCmd seq_lin_to_spkout[] = 
@@ -334,7 +330,6 @@ static wmCodecCmd seq_lin_to_headset_playback[] =
     {0x49, 0x0100}
 };
 
-//                                                                                        
 /* QTR HPH ==> WM9093 IN1 ==> EAR and SPK */
 static wmCodecCmd seq_lin_to_headset_spkout[] = 
 {
@@ -361,9 +356,7 @@ static wmCodecCmd seq_lin_to_headset_spkout[] =
     {0x46, 0x0100},	
     {0x49, 0x0100}
 };
-//                                                                                        
 
-//                                                     
 /* QTR HPH ==> WM9093 IN1 ==> EAR */
 static wmCodecCmd seq_lin_to_headset_tty[] = 
 {
@@ -384,7 +377,6 @@ static wmCodecCmd seq_lin_to_headset_tty[] =
     {0x46, 0x0100},
     {0x49, 0x0100}
 };
-//                                                     
 
 static wmCodecCmd seq_power_down[] = 
 {
@@ -418,7 +410,6 @@ static struct wm9093_platform_data lge_audio_wm9093_platform = {
 		.amp_function_size = ARRAY_SIZE(seq_lin_to_headset),
 	},
 
-//                                                 
     .hph_spk_on = { // at&t simultaneously Ringing Headset and SPK
         .amp_function = seq_lin_to_headset_spkout,
         .amp_function_size = ARRAY_SIZE(seq_lin_to_headset_spkout),
@@ -438,7 +429,7 @@ static struct wm9093_platform_data lge_audio_wm9093_platform = {
         .amp_function = seq_lin_to_headset_playback,
         .amp_function_size = ARRAY_SIZE(seq_lin_to_headset_playback),
     },
-//                                                 
+
 	.power_down = {
 		.amp_function = seq_power_down,
 		.amp_function_size = ARRAY_SIZE(seq_power_down),
@@ -470,11 +461,8 @@ static struct i2c_board_info lge_i2c_wm9093_info[] = {
 
 #ifdef CONFIG_DEBUG_FS
 static struct dentry *debugfs_hsed_config;
-//                                                                        
 static struct dentry *debugfs_wm9093_cal_tool_config;
 static struct dentry *debugfs_qtr8616l_cal_tool_config;
-//                                                                        
-
 static void snddev_hsed_config_modify_setting(int type);
 static void snddev_hsed_config_restore_setting(void);
 #endif
@@ -812,7 +800,6 @@ static int msm_snddev_poweramp_on_hph_playback(void)
 	return 0;
 }
 
-//                                                                                        
 static int msm_snddev_poweramp_on_hph_spk(void)
 {
 	pr_debug("%s\n", __func__);
@@ -834,9 +821,7 @@ static void msm_snddev_poweramp_off_hph_spk(void)
 
 	pr_debug("%s\n", __func__);
 }
-//                                                                                        
 
-//                                                      
 static int msm_snddev_poweramp_on_tty(void)
 {
 	pr_debug("%s\n", __func__);
@@ -858,7 +843,6 @@ static void msm_snddev_poweramp_off_tty(void)
 
 	pr_debug("%s\n", __func__);
 }
-//                                                      
 
 /* Regulator 8058_l10 supplies regulator 8058_ncp. */
 #ifndef CONFIG_LGE_AUDIO_NO_NCP_MODE
@@ -875,24 +859,6 @@ static int msm_snddev_voltage_on(void)
 
 	if (atomic_inc_return(&preg_ref_cnt) > 1)
 		return 0;
-
-#if 0
-	snddev_reg_l10 = regulator_get(NULL, "8058_l10");
-	if (IS_ERR(snddev_reg_l10)) {
-		pr_err("%s: regulator_get(%s) failed (%ld)\n", __func__,
-			"l10", PTR_ERR(snddev_reg_l10));
-		return -EBUSY;
-	}
-
-	rc = regulator_set_voltage(snddev_reg_l10, 2600000, 2600000);
-	if (rc < 0)
-		pr_err("%s: regulator_set_voltage(l10) failed (%d)\n",
-			__func__, rc);
-
-	rc = regulator_enable(snddev_reg_l10);
-	if (rc < 0)
-		pr_err("%s: regulator_enable(l10) failed (%d)\n", __func__, rc);
-#endif
 
 #ifndef CONFIG_LGE_AUDIO_NO_NCP_MODE
 	snddev_reg_ncp = regulator_get(NULL, "8058_ncp");
@@ -948,17 +914,6 @@ static void msm_snddev_voltage_off(void)
 
 done:
 #endif
-#if 0
-	if (!snddev_reg_l10)
-		return;
-
-	rc = regulator_disable(snddev_reg_l10);
-	if (rc < 0)
-		pr_err("%s: regulator_disable(l10) failed (%d)\n",
-			__func__, rc);
-
-	regulator_put(snddev_reg_l10);
-#endif
 	snddev_reg_l10 = NULL;
 }
 
@@ -974,16 +929,6 @@ static int msm_snddev_enable_amic_power(void)
 	if (ret)
 		pr_err("%s: Enabling OTHC_MICBIAS_MAIN(%d) power failed\n", __func__, OTHC_MICBIAS_MAIN);
 #endif
-
-#if 0
-	ret = gpio_request(GPIO_CAMCORDER_MIC_EN, "CAMCORDER_MIC_EN");
-	if (ret) {
-		pr_err("%s: camcorder mic en %d request failed\n",
-			__func__, GPIO_CAMCORDER_MIC_EN);
-		return ret;
-	}
-	gpio_direction_output(GPIO_CAMCORDER_MIC_EN, 1);
-#endif
 #endif
 	return 0;
 /*                                  */
@@ -993,11 +938,6 @@ static void msm_snddev_disable_amic_power(void)
 {
 /*                                  */
 #ifdef CONFIG_LGE_AUDIO
-#if 0
-	gpio_set_value_cansleep(GPIO_CAMCORDER_MIC_EN, 0);
-	gpio_free(GPIO_CAMCORDER_MIC_EN);
-#endif
-
 #ifdef CONFIG_PMIC8058_OTHC
 	{
 		int ret;
@@ -1012,31 +952,6 @@ static void msm_snddev_disable_amic_power(void)
 /*                                  */
 
 }
-
-#if 0
-static int msm_snddev_enable_rcv_power(void)
-{
-	int ret;
-
-	ret = gpio_request(GPIO_RCV_AMP_RESET, "CAMCORDER_MIC_EN");
-	if (ret) {
-		pr_err("%s: rcv power en %d request failed\n",
-			__func__, GPIO_RCV_AMP_RESET);
-		return 0;
-	}
-
-	gpio_direction_output(GPIO_RCV_AMP_RESET, 1);
-
-	return 0;
-}
-
-static void msm_snddev_disable_rcv_power(void)
-{
-	gpio_set_value_cansleep(GPIO_RCV_AMP_RESET, 0);
-
-	gpio_free(GPIO_RCV_AMP_RESET);
-}
-#endif
 
 static int msm_snddev_enable_adualmic_power(void)
 {
@@ -1054,6 +969,7 @@ static int msm_snddev_enable_adualmic_power(void)
 	return 0;
 
 }
+
 static void msm_snddev_disable_adualmic_power(void)
 {
 #if defined(CONFIG_LGE_AUDIO)&&defined(CONFIG_PMIC8058_OTHC)
@@ -4121,7 +4037,6 @@ static const struct file_operations snddev_hsed_config_debug_fops = {
 	.write = snddev_hsed_config_debug_write
 };
 
-//                                                                        
 char *strtok_r(char *s, const char *delim, char **last)
 {
     char *spanp;
@@ -4279,7 +4194,6 @@ u16 strtol(const char *nptr, char **endptr, int base)
 
 void set_wm9093_cal_db(int AMPParamIndex, u16 cal_db)
 {
-//	pr_info("%s [%d 0x%04X]\n", __func__, AMPParamIndex, cal_db);    
 
     switch(AMPParamIndex) {
 #ifdef CONFIG_LGE_AUDIO_SPEAKER_MONO
@@ -4664,10 +4578,6 @@ int get_wm9093_cal_db(char *data_array)
 
    END_OF_CODES:
 
-//    *data_len  = buff_len;
-
-//	pr_info("%s buff_len is %d\n", __func__, buff_len);    
-
     return buff_len;
 }
 
@@ -4856,8 +4766,6 @@ int get_qtr8615l_cal_db(char *data_array, int *data_len)
 
     *data_len  = buff_len;
 
-//    pr_info("%s buff_len is %d\n", __func__, buff_len); 
-
     return *data_len;
 }
 
@@ -4936,8 +4844,6 @@ static const struct file_operations lge_qtr8615l_cal_tool_fops = {
 	.open = lge_qtr8615l_cal_tool_open,
 	.write = lge_qtr8615l_cal_tool_write
 };
-
-//                                                                        
 
 #endif
 
@@ -5175,7 +5081,6 @@ void __init msm_snddev_init(void)
 				S_IFREG | S_IRUGO, NULL,
 		(void *) "msm_hsed_config", &snddev_hsed_config_debug_fops);
 
-//                                                                       
     debugfs_wm9093_cal_tool_config = debugfs_create_file(LGE_WM9093_CALIBRATION_TOOL,
                 S_IFREG | S_IRUGO, NULL,
                 (void *) LGE_WM9093_CALIBRATION_TOOL, &lge_wm9093_cal_tool_fops);
@@ -5183,6 +5088,5 @@ void __init msm_snddev_init(void)
     debugfs_qtr8616l_cal_tool_config = debugfs_create_file(LGE_QTR8615L_CALIBRATION_TOOL,
                 S_IFREG | S_IRUGO, NULL,
                 (void *) LGE_QTR8615L_CALIBRATION_TOOL, &lge_qtr8615l_cal_tool_fops);
-//                                                                       
 #endif
 }

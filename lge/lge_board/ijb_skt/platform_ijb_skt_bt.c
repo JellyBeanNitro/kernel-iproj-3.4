@@ -161,7 +161,7 @@ static int ijb_skt_bluetooth_toggle_radio(void *data, bool state)
 	int (*power_control)(int enable);
 
 	 printk(KERN_ERR "[LG_BTUI] %s : Called ijb_skt_bluetooth_toggle_radio",__func__);  	 	
-    power_control = ((struct bluetooth_platform_data *)data)->bluetooth_power;
+	power_control = ((struct bluetooth_platform_data *)data)->bluetooth_power;
 	ret = (*power_control)((state == RFKILL_USER_STATE_SOFT_BLOCKED) ? 1 : 0);
 	return ret;
 }

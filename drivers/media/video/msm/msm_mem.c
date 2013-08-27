@@ -276,7 +276,13 @@ uint8_t msm_pmem_region_lookup(struct hlist_head *ptype,
 	regptr = reg;
 	mutex_lock(&hlist_mut);
 	hlist_for_each_entry_safe(region, node, n, ptype, list) {
-		if (region->info.type == pmem_type && region->info.active) {
+		if (region->info.type == pmem_type){
+			if(!region->info.active) 
+			{
+				region->info.active= 1; 
+				pr_err("%s:   Need to be reset(active) for region->info.type(%d),  paddr( 0x%lx) \n",  __func__,region->info.type, region->paddr); 
+			}
+		
 			*regptr = *region;
 			rc += 1;
 			if (rc >= maxcount)
@@ -363,7 +369,10 @@ unsigned long msm_pmem_stats_vtop_lookup(
 			return region->paddr;
 		}
 	}
-
+/* After lookup failure, dump all the list entries... */ 
+hlist_for_each_entry_safe(region, node, n, &mctl->stats_info.pmem_stats_list, list) { 
+	 pr_err("listed type(%d), paddr( 0x%lx), active(%d) \n", region->info.type, region->paddr,   region->info.active); 
+}
 	return 0;
 }
 
@@ -384,7 +393,10 @@ unsigned long msm_pmem_stats_ptov_lookup(
 			return (unsigned long)(region->info.vaddr);
 		}
 	}
-
+/* After lookup failure, dump all the list entries... */ 
+hlist_for_each_entry_safe(region, node, n, &mctl->stats_info.pmem_stats_list, list) { 
+	pr_err("listed type(%d), paddr( 0x%lx), active(%d) \n", region->info.type, region->paddr, region->info.active); 
+}
 	return 0;
 }
 

@@ -199,6 +199,17 @@ int32_t msm_actuator_write_focus(
 	damping_code_step = damping_params->damping_step;
 	wait_time = damping_params->damping_delay;
 
+	if (damping_code_step ==0)
+	{
+		printk("[ERROR][%s] damping_code_step = %d ---> 255\n",__func__,damping_code_step);
+		damping_code_step = 255;
+	}
+	if (wait_time ==0)
+	{
+		printk("[ERROR][%s] wait_time = %d ---> 4500\n",__func__,damping_code_step);
+		wait_time = 4500;
+	}
+
 	/* Write code based on damping_code_step in a loop */
 	for (next_lens_pos =
 		curr_lens_pos + (sign_direction * damping_code_step);
@@ -261,12 +272,9 @@ int32_t msm_actuator_move_focus(
 	int16_t dest_step_pos = move_params->dest_step_pos;
 	uint16_t curr_lens_pos = 0;
 	int dir = move_params->dir;
-	int32_t num_steps = move_params->num_steps;
 
-	CDBG("%s called, dir %d, num_steps %d\n",
-		__func__,
-		dir,
-		num_steps);
+	int count_actuator_write = 0;
+	CDBG("%s called, dir %d, num_steps %d\n",__func__,dir,move_params->num_steps);  // for compile after not to use CDBG
 
 	if (dest_step_pos == a_ctrl->curr_step_pos)
 		return rc;
@@ -302,7 +310,7 @@ int32_t msm_actuator_move_focus(
 				return rc;
 			}
 			curr_lens_pos = target_lens_pos;
-
+			count_actuator_write ++;
 		} else {
 			target_step_pos = step_boundary;
 			target_lens_pos =
@@ -326,8 +334,24 @@ int32_t msm_actuator_move_focus(
 			curr_lens_pos = target_lens_pos;
 
 			a_ctrl->curr_region_index += sign_dir;
+			if (a_ctrl->curr_region_index >= 2)
+			{
+			 printk("[ERROR][%s] a_ctrl->curr_region_index = %d ---> 1\n",__func__,a_ctrl->curr_region_index);
+			 a_ctrl->curr_region_index = 1;
+			}
+			if (a_ctrl->curr_region_index < 0)
+			{
+			 printk("[ERROR][%s] a_ctrl->curr_region_index = %d ---> 0\n",__func__,a_ctrl->curr_region_index);
+			 a_ctrl->curr_region_index = 0;
+			}
+			count_actuator_write ++;
 		}
 		a_ctrl->curr_step_pos = target_step_pos;
+		if (count_actuator_write > 2)
+		{
+		   printk("[ERROR][%s] count_actuator_write = %d ---> break\n",__func__,count_actuator_write);
+		   break;
+	    }
 	}
 
 	return rc;

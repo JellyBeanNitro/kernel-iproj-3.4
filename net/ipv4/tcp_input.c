@@ -4496,6 +4496,11 @@ static void tcp_data_queue_ofo(struct sock *sk, struct sk_buff *skb)
 		 * to avoid future tcp_collapse_ofo_queue(),
 		 * probably the most expensive function in tcp stack.
 		 */
+		 
+//                                                                                  
+// On condition of LTE network and Fusion2_JB model, download apk file on m.kmbstore.com site is failed over 90% percent.
+//original		 
+	/*	
 		if (skb->len <= skb_tailroom(skb1) && !tcp_hdr(skb)->fin) {
 			NET_INC_STATS_BH(sock_net(sk),
 					 LINUX_MIB_TCPRCVCOALESCE);
@@ -4509,6 +4514,11 @@ static void tcp_data_queue_ofo(struct sock *sk, struct sk_buff *skb)
 		} else {
 			__skb_queue_after(&tp->out_of_order_queue, skb1, skb);
 		}
+	*/
+//original		 
+	
+	__skb_queue_after(&tp->out_of_order_queue, skb1, skb);
+//                                                                                  
 
 		if (!tp->rx_opt.num_sacks ||
 		    tp->selective_acks[0].end_seq != seq)

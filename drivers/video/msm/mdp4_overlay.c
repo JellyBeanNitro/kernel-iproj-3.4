@@ -110,6 +110,7 @@ struct mdp4_overlay_perf {
 	u32 use_ov0_blt;
 	u32 use_ov1_blt;
 	u32 mdp_bw;
+    u32 pipe_cnt;
 };
 
 struct mdp4_overlay_perf perf_request = {
@@ -1519,19 +1520,27 @@ void mdp4_overlayproc_cfg(struct mdp4_overlay_pipe *pipe)
 		mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_OFF, FALSE);
 }
 
-int mdp4_overlay_pipe_staged(int mixer)
+int mdp4_overlay_pipe_staged(struct mdp4_overlay_pipe *pipe)
 {
-	uint32 data, mask, i, off;
+	uint32 data, mask;
+	int mixer;
+
+	mixer = pipe->mixer_num;
+	data = ctrl->mixer_cfg[mixer];
+
+	mask = 0x0f;
+	mask <<= (4 * pipe->pipe_num);
+	data &= mask;
+
+	return data;
+}
+
+int mdp4_overlay_mixer_staged(int mixer)
+{
+	uint32 data, mask, i;
 	int p1, p2;
 
-	if (mixer == MDP4_MIXER2)
-		off = 0x100F0;
-	else
-		off = 0x10100;
-
-	mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_ON, FALSE);
-	data = inpdw(MDP_BASE + off);
-	mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_OFF, FALSE);
+	data = ctrl->mixer_cfg[mixer];
 	p1 = 0;
 	p2 = 0;
 	for (i = 0; i < 8; i++) {
@@ -1591,6 +1600,9 @@ void mdp4_mixer_stage_commit(int mixer)
 		pipe = ctrl->stage[mixer][i];
 		if (pipe == NULL)
 			continue;
+        if (pipe->flags & MDP_BLOCK_PIPE) {
+			continue;
+		}
 		pr_debug("%s: mixer=%d ndx=%d stage=%d\n", __func__,
 					mixer, pipe->pipe_ndx, i);
 		stage = pipe->mixer_stage;
@@ -1953,7 +1965,6 @@ void mdp4_mixer_blend_setup(int mixer)
 		s_pipe->pipe_ndx, s_alpha, s_pipe->alpha, s_pipe->is_fg,
 		alpha_drop);
 
-
 		/* base on fg's alpha */
 		blend->bg_alpha = 0x0ff - s_pipe->alpha;
 		blend->fg_alpha = s_pipe->alpha;
@@ -2065,7 +2076,6 @@ void mdp4_mixer_blend_setup(int mixer)
 		blend++;
 	}
 	mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_OFF, FALSE);
-
 }
 
 int mdp4_update_base_blend(struct msm_fb_data_type *mfd,
@@ -2628,6 +2638,16 @@ static int mdp4_calc_pipe_mdp_clk(struct msm_fb_data_type *mfd,
 			__func__);
 	}
 
+	/*
+	 * When MIXER1 requests over the max clock,
+	 * To downscale the request clock to internal max value.
+	 */
+	if (pipe->mixer_num == MDP4_MIXER1 && rst > mdp_max_clk) {
+		pr_info("%s MIXER1 requests clock over max %d -> downscale to max %d\n",
+		__func__, (u32)rst, (u32)mdp_max_clk);
+		rst = mdp_max_clk;
+	}
+
 	pipe->req_clk = (u32) rst;
 
 	pr_debug("%s: required mdp clk %d mixer %d pipe ndx %d\n",
@@ -2691,6 +2711,7 @@ int mdp4_overlay_mdp_perf_req(struct msm_fb_data_type *mfd,
 	u32 worst_mdp_bw = OVERLAY_PERF_LEVEL4;
 	int i;
 	struct mdp4_overlay_perf *perf_req = &perf_request;
+	struct mdp4_overlay_perf *perf_cur = &perf_current;
 	struct mdp4_overlay_pipe *pipe = plist;
 	u32 cnt = 0;
 	int ret = -EINVAL;
@@ -2752,6 +2773,14 @@ int mdp4_overlay_mdp_perf_req(struct msm_fb_data_type *mfd,
 				perf_req->use_ov0_blt = 1;
 			}
 		}
+	}
+
+	perf_req->pipe_cnt = cnt;
+
+	if (mfd->panel_info.pdest == DISPLAY_1 && perf_req->use_ov0_blt == 0 &&
+               perf_cur->use_ov0_blt == 1 && (perf_req->pipe_cnt == perf_cur->pipe_cnt))
+	{
+		perf_req->use_ov0_blt = 1;
 	}
 
 	perf_req->mdp_clk_rate = worst_mdp_clk;
@@ -2905,6 +2934,7 @@ void mdp4_overlay_mdp_perf_upd(struct msm_fb_data_type *mfd,
 			perf_cur->use_ov1_blt = perf_req->use_ov1_blt;
 		}
 	}
+	perf_cur->pipe_cnt = perf_req->pipe_cnt;
 	return;
 }
 
@@ -3517,7 +3547,6 @@ end:
 	return ret;
 }
 
-// QCT Performance
 int mdp4_overlay_commit(struct fb_info *info, int mixer)
 {
 	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)info->par;

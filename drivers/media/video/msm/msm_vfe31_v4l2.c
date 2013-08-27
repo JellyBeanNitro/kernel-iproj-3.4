@@ -27,6 +27,14 @@
 #include "msm.h"
 #include "msm_vfe31_v4l2.h"
 
+#undef pr_debug
+#undef pr_info
+#undef pr_err
+
+#define pr_debug(fmt, args...) do {} while(0)
+#define pr_info(fmt, args...) do {} while(0)
+#define pr_err(fmt, args...) do {} while(0)
+
 atomic_t irq_cnt;
 
 #define BUFF_SIZE_128 128
@@ -50,7 +58,7 @@ atomic_t irq_cnt;
 	vfe31_put_ch_pong_addr((chn), (addr)) : \
 	vfe31_put_ch_ping_addr((chn), (addr)))
 
-#define VFE_CLK_RATE	153600000
+#define VFE_CLK_RATE	228570000
 #define CAMIF_CFG_RMSK             0x1fffff
 
 static struct vfe31_ctrl_type *vfe31_ctrl;
@@ -1259,12 +1267,11 @@ static int vfe31_proc_general(
 		vfe31_general_cmd[cmd->id], cmd->length);
 	switch (cmd->id) {
 	case VFE_CMD_RESET:
-		pr_info("vfe31_proc_general: cmdID = %s\n",
-			vfe31_general_cmd[cmd->id]);
+		printk(KERN_INFO "vfe31_proc_general: cmdID = %s\n", vfe31_general_cmd[cmd->id]);
 		vfe31_reset();
 		break;
 	case VFE_CMD_START:
-		pr_info("vfe31_proc_general: cmdID = %s\n",
+		printk(KERN_INFO "vfe31_proc_general: cmdID = %s\n",
 			vfe31_general_cmd[cmd->id]);
 		if ((vfe31_ctrl->operation_mode ==
 				VFE_OUTPUTS_PREVIEW_AND_VIDEO) ||
@@ -1289,7 +1296,7 @@ static int vfe31_proc_general(
 		vfe31_update();
 		break;
 	case VFE_CMD_CAPTURE_RAW:
-		pr_info("%s: cmdID = VFE_CMD_CAPTURE_RAW\n", __func__);
+		printk(KERN_INFO "%s: cmdID = VFE_CMD_CAPTURE_RAW\n", __func__);
 		if (copy_from_user(&snapshot_cnt, (void __user *)(cmd->value),
 			sizeof(uint32_t))) {
 			rc = -EFAULT;
@@ -1347,7 +1354,7 @@ static int vfe31_proc_general(
 		rc = vfe31_capture(pmctl, snapshot_cnt);
 		break;
 	case VFE_CMD_START_RECORDING:
-		pr_info("vfe31_proc_general: cmdID = %s\n",
+		printk(KERN_INFO "vfe31_proc_general: cmdID = %s\n",
 			vfe31_general_cmd[cmd->id]);
 		if (vfe31_ctrl->operation_mode ==
 			VFE_OUTPUTS_PREVIEW_AND_VIDEO)
@@ -1368,7 +1375,7 @@ static int vfe31_proc_general(
 		rc = vfe31_start_recording(pmctl);
 		break;
 	case VFE_CMD_STOP_RECORDING:
-		pr_info("vfe31_proc_general: cmdID = %s\n",
+		printk(KERN_INFO "vfe31_proc_general: cmdID = %s\n",
 			vfe31_general_cmd[cmd->id]);
 		rc = vfe31_stop_recording(pmctl);
 		break;
@@ -1983,10 +1990,12 @@ static int vfe31_proc_general(
 			vfe31_ctrl->vfebase + VFE_MODULE_CFG);
 		break;
 	case VFE_CMD_STATS_AF_STOP:
+#if 0 // need test this shit
 		old_val = msm_camera_io_r(vfe31_ctrl->vfebase + VFE_MODULE_CFG);
 		old_val &= ~AF_BF_ENABLE_MASK;
 		msm_camera_io_w(old_val,
 			vfe31_ctrl->vfebase + VFE_MODULE_CFG);
+#endif
 		break;
 
 	case VFE_CMD_STATS_IHIST_STOP:
@@ -2011,7 +2020,7 @@ static int vfe31_proc_general(
 		break;
 
 	case VFE_CMD_STOP:
-		pr_info("vfe31_proc_general: cmdID = %s\n",
+		printk(KERN_INFO "vfe31_proc_general: cmdID = %s\n",
 			vfe31_general_cmd[cmd->id]);
 		vfe31_stop();
 		break;
@@ -2498,7 +2507,8 @@ static void vfe31_process_camif_sof_irq(void)
 	}
 	vfe31_ctrl->vfeFrameId++;
 	vfe31_send_isp_msg(vfe31_ctrl, MSG_ID_SOF_ACK);
-//	pr_err("camif_sof_irq, frameId = %d\n", vfe31_ctrl->vfeFrameId);
+    if(vfe31_ctrl->vfeFrameId %30 ==1)
+    	pr_err("camif_sof_irq, frameId = %d\n", vfe31_ctrl->vfeFrameId);
 
 	if (vfe31_ctrl->sync_timer_state) {
 		if (vfe31_ctrl->sync_timer_repeat_count == 0)
@@ -2744,8 +2754,7 @@ static void vfe31_process_output_path_irq_1(void)
 		ch2_paddr = vfe31_get_ch_addr(ping_pong,
 			vfe31_ctrl->outpath.out1.ch2);
 
-		pr_debug("%s ch0 = 0x%x, ch1 = 0x%x, ch2 = 0x%x\n",
-			__func__, ch0_paddr, ch1_paddr, ch2_paddr);
+		pr_debug("%s ch0 = 0x%x, ch1 = 0x%x, ch2 = 0x%x\n",__func__, ch0_paddr, ch1_paddr, ch2_paddr);
 		if (free_buf) {
 			/* Y channel */
 			vfe31_put_ch_addr(ping_pong,

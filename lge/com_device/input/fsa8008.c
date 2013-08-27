@@ -129,61 +129,12 @@ enum {
 	TRUE = 1,
 };
 
-#ifdef CONFIG_LGE_BROADCAST_DCM //for 325 BATMAN MMBI
-static int ear_state = 0;
-#endif
-
-
 #define AT_TEST_GPKD
 
 #ifdef AT_TEST_GPKD
 static char hook_keycode;
 static char start_keylog;
 
-#if defined(CONFIG_MACH_LGE_325_BOARD_SKT) || defined(CONFIG_MACH_LGE_325_BOARD_LGU) || defined(CONFIG_MACH_LGE_325_BOARD_DCM)
-
-
-static struct class *fsa8008_class;
-
-
-#endif
-
-
-#if defined(CONFIG_MACH_LGE_325_BOARD_SKT) || defined(CONFIG_MACH_LGE_325_BOARD_LGU) || defined(CONFIG_MACH_LGE_325_BOARD_DCM)
-
-ssize_t hookkeylog_show_onoff(struct class *class, struct class_attribute *attr, char *buf)
-{
-	int r = 0;
-
-	r = sprintf(buf, "%c%c\n", start_keylog, hook_keycode);
-    hook_keycode = ' ';
-	return r;
-}
-
-
-ssize_t hookkeylog_store_onoff(struct class *class, struct class_attribute *attr, const char *buf, size_t count)
-{
-	unsigned char string[2];
-
-	sscanf(buf, "%s", string);
-
-	if (!count)
-		return -EINVAL;
-
-	if(!strncmp(string, "0", 1))
-	{
-		start_keylog = '0';
-		hook_keycode = ' ';
-	}
-	else if(!strncmp(string, "1", 1))
-		start_keylog = '1';
-
-	return count;
-}
-
-
-static CLASS_ATTR(hookkeylog, 0664, hookkeylog_show_onoff, hookkeylog_store_onoff);
-#else
 ssize_t hookkeylog_show_onoff(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	int r = 0;
@@ -218,7 +169,6 @@ ssize_t hookkeylog_store_onoff(struct device *dev, struct device_attribute *attr
 
 DEVICE_ATTR(hookkeylog, 0664, hookkeylog_show_onoff, hookkeylog_store_onoff);
 
-#endif
 #endif
 
 static ssize_t lge_hsd_print_name(struct switch_dev *sdev, char *buf)
@@ -369,9 +319,6 @@ static void remove_headset(struct hsd_info *hi)
      }
 }
 
-#ifdef CONFIG_LGE_BROADCAST_DCM //for 325 BATMAN MMBI
-extern void isdbt_hw_antenna_switch(int ear_state);
-#endif
 static void detect_work(struct work_struct *work)
 {
 	int state;
@@ -395,10 +342,6 @@ static void detect_work(struct work_struct *work)
 		if (switch_get_state(&hi->sdev) != NO_DEVICE) {
 			HSD_DBG("==== LGE headset removing\n");
 			remove_headset(hi);
-			#ifdef CONFIG_LGE_BROADCAST_DCM
-			isdbt_hw_antenna_switch(0);
-			ear_state = 0;
-			#endif
 		} else {
 			HSD_DBG("err_invalid_state state = %d\n", state);
 		}
@@ -407,10 +350,6 @@ static void detect_work(struct work_struct *work)
 		if (switch_get_state(&hi->sdev) == NO_DEVICE) {
 			HSD_DBG("==== LGE headset inserting\n");
 			insert_headset(hi);
-			#ifdef CONFIG_LGE_BROADCAST_DCM
-			isdbt_hw_antenna_switch(1);
-			ear_state = 1;
-			#endif
 		} else {
 			HSD_DBG("err_invalid_state state = %d\n", state);
 		}
@@ -422,14 +361,6 @@ static void detect_work(struct work_struct *work)
 	local_irq_restore(irq_flags);
 #endif
 }
-
-#ifdef CONFIG_LGE_BROADCAST_DCM //for 325 BATMAN MMBI
-int check_ear_state(void)
-{
-	return ear_state;
-}
-EXPORT_SYMBOL(check_ear_state);
-#endif
 
 static irqreturn_t gpio_irq_handler(int irq, void *dev_id)
 {
@@ -696,13 +627,7 @@ static int lge_hsd_probe(struct platform_device *pdev)
 #endif
 
 #ifdef AT_TEST_GPKD
-
-#if defined(CONFIG_MACH_LGE_325_BOARD_SKT) || defined(CONFIG_MACH_LGE_325_BOARD_LGU) || defined(CONFIG_MACH_LGE_325_BOARD_DCM)
-    fsa8008_class = class_create(THIS_MODULE, "fsa8008");
-  	err = class_create_file(fsa8008_class, &class_attr_hookkeylog);
-#else
-	  err = device_create_file(&pdev->dev, &dev_attr_hookkeylog);
-#endif
+	err = device_create_file(&pdev->dev, &dev_attr_hookkeylog);
 #endif
 
 	return ret;

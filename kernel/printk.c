@@ -1005,17 +1005,26 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 //                                                                                                                                                                             
 // http://165.243.137.64:8100/Cayman_LGU/#change,5547
 #if 1
+				unsigned long long t;
+				unsigned long nanosec_rem;
+
 				struct timespec time;
 				struct tm tmresult;
+
+				t = cpu_clock(printk_cpu);
+				nanosec_rem = do_div(t, 1000000000);
+
 				time = __current_kernel_time();
-				time_to_tm(time.tv_sec, sys_tz.tz_minuteswest * 60 * (-1), &tmresult);
-				tlen = sprintf(tbuf, "[%02d-%02d %02d:%02d:%02d.%03lu] ",
-											tmresult.tm_mon + 1,
-											tmresult.tm_mday,
-											tmresult.tm_hour,
-											tmresult.tm_min,
-											tmresult.tm_sec,
-											(unsigned long) time.tv_nsec / 1000000);
+				time_to_tm(time.tv_sec,sys_tz.tz_minuteswest * 60* (-1),&tmresult);
+				tlen = sprintf(tbuf, "[%5lu.%06lu / %02d-%02d %02d:%02d:%02d.%03lu] ",
+						(unsigned long) t,
+						nanosec_rem / 1000,
+						tmresult.tm_mon+1,
+						tmresult.tm_mday,
+						tmresult.tm_hour,
+						tmresult.tm_min,
+						tmresult.tm_sec,
+						(unsigned long) time.tv_nsec/1000000);
 #else
 				unsigned long long t;
 				unsigned long nanosec_rem;

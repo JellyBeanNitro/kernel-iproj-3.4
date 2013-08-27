@@ -56,7 +56,6 @@ typedef enum {
 	MAX_PHYS_TARGET_NUM,
 } DISP_TARGET_PHYS;
 
-// QCT 20120214
 enum {
 	BLT_SWITCH_TG_OFF,
 	BLT_SWITCH_TG_ON
@@ -71,7 +70,7 @@ struct lcd_panel_info {
 	__u32 v_pulse_width;
 	__u32 hw_vsync_mode;
 	__u32 vsync_notifier_period;
-	__u32 blt_ctrl;		// QCT 20120214
+	__u32 blt_ctrl;
 	__u32 rev;
 };
 

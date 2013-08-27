@@ -7,54 +7,12 @@ config MACH_LGE_I_BOARD
 
 choice
 	prompt "LGE board type"
-	default MACH_LGE_I_BOARD_ATNT 
-
-#config MACH_LGE_I_BOARD_ATNT
-#       bool "LGE_I_BOARD_ATNT"
-#       depends on MACH_LGE_I_BOARD
-#       ---help---
-#         LGE I-project for AT&T.
-
-#config MACH_LGE_I_BOARD_SKT
-#       bool "LGE_I_BOARD_SKT"
-#       depends on MACH_LGE_I_BOARD
-#       ---help---
-#         LGE I-project for SKT.         
+	default MACH_LGE_IJB_BOARD_SKT
 
 config MACH_LGE_IJB_BOARD_SKT
        bool "LGE_IJB_BOARD_SKT"
        depends on MACH_LGE_I_BOARD
        ---help---
          LGE IJB-project for SKT.         
-
-#config MACH_LGE_IJB_BOARD_LGU
-#       bool "LGE_IJB_BOARD_LGU"
-#       depends on MACH_LGE_I_BOARD
-#       ---help---
-#         LGE IJB-project for LGU.         
-
-endchoice
- 
-config MACH_LGE_120_BOARD
-       bool "LGE_120_BOARD"
-       depends on ARCH_MSM8X60
-       ---help---
-         LGE 120 project.
-
-choice
-    prompt "LGE 120 board type"
-    default MACH_LGE_120_BOARD_SKT
-
-config MACH_LGE_120_BOARD_SKT
-       bool "LGE_120_BOARD_SKT"
-       depends on MACH_LGE_120_BOARD
-       ---help---
-         LGE 120-project for SKT.
-
-#config MACH_LGE_120_BOARD_KT
-#       bool "LGE_120_BOARD_KT"
-#       depends on MACH_LGE_120_BOARD
-#       ---help---
-#        LGE 120-project for KT.
 
 endchoice

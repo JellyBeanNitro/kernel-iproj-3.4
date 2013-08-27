@@ -1071,6 +1071,8 @@ static int rmt_storage_force_sync(struct msm_rpc_client *client)
 	rc = msm_rpc_client_req2(client,
 			RMT_STORAGE_FORCE_SYNC_PROC, NULL, NULL,
 			rmt_storage_receive_sync_arg, &args, -1);
+	
+	pr_err("%s: force sync RPC:0x%08x : rc%d ##### \n", __func__, client->prog, rc);
 	if (rc) {
 		pr_err("%s: force sync RPC req failed: %d\n", __func__, rc);
 		return rc;

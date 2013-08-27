@@ -125,7 +125,7 @@ typedef struct {
 #define FACTORY_RESET_STR_SIZE 11
 #define FACTORY_RESET_STR "FACT_RESET_"
 #define MMC_DEVICENAME "/dev/block/mmcblk0"
-#ifdef CONFIG_MACH_LGE_120_BOARD //                                           
+#if defined(CONFIG_MACH_LGE_120_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
 #define MMC_DEVICENAME_MISC "/dev/block/mmcblk0p25"
 #endif
 #define LCD_K_CAL_SIZE 6//kcal for 325
@@ -421,53 +421,6 @@ static int rooting_nv_read(char *buf, struct kernel_param *kp)
 }
 
 module_param_call(rooting_nv, rooting_nv_write, rooting_nv_read, &dummy_arg, S_IWUSR | S_IRUGO);
-#endif
-
-
-
-/*                                 */
-#if defined(CONFIG_MACH_LGE_I_BOARD) && defined(CONFIG_BATTERY_MAX17040) //                                           
-extern int cur_soc_val;
-extern int msm_rw_fuel(uint32_t event, uint8_t is_write, char *buf, uint32_t len);
-int batt_gauge_cal_nv_write(int val)
-{
-  int ret;
-  char buf[11]; //                                 
-
-  ret = sprintf(buf, "%d", val);
-  
-  pr_info("%s\n", __func__);
-  ret = msm_rw_fuel(LG_FW_FUEL_CAL, 1, (char *)buf, 4);
-
-  return ret;
-}
-EXPORT_SYMBOL(batt_gauge_cal_nv_write);
-
-int batt_gauge_cal_nv_read(void)
-{
-  int ret;
-  char buf[4];
-  
-  pr_info("%s\n", __func__);
-  ret = msm_rw_fuel(LG_FW_FUEL_CAL, 0, buf, 4);
-
-  return ret;
-}
-EXPORT_SYMBOL(batt_gauge_cal_nv_read);
-
-static int fuel_level_write(const char *buf, struct kernel_param *kp)
-{
-  char SoC_buf[11]; //                                 
-  int ret;
-  	
-  ret = sprintf(SoC_buf, "%d", cur_soc_val);
-  msm_rw_fuel(LG_FW_FUEL_CAL, 1, (char *)SoC_buf, 4);
-  
-  return 4;
-}
-
-
-module_param_call(fuel_level, fuel_level_write, NULL, &dummy_arg, 0644);
 #endif
 
 #ifdef CONFIG_LGE_VOLD_SUPPORT_CRYPT
@@ -985,7 +938,7 @@ mutex_lock(&emmc_dir_lock);  //kabjoo.choi
 
 EXPORT_SYMBOL(lge_mmc_scan_partitions);
 
-#ifdef CONFIG_MACH_LGE_120_BOARD //                                          
+#if defined(CONFIG_MACH_LGE_120_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
 //                                                                    
 static int write_status_power(const char *val)
 {
@@ -1317,7 +1270,7 @@ static int test_read_block( char *buf, struct kernel_param *kp)
 }
 
 module_param_call(frst_flag, test_write_block, test_read_block, &dummy_arg, S_IWUSR | S_IRUGO);
-#ifdef CONFIG_MACH_LGE_120_BOARD //                                          
+#if defined(CONFIG_MACH_LGE_120_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
 module_param_call(lcd_k_cal, write_lcd_k_cal, NULL, NULL,S_IWUSR|S_IRUSR|S_IRGRP|S_IWGRP);	//daheui.kim for kcal
 #else
 module_param_call(lcd_k_cal, write_lcd_k_cal, NULL, NULL,S_IWUSR | S_IRUSR);	//kcal for 325

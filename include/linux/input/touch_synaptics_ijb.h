@@ -25,13 +25,22 @@
 
 #define DESCRIPTION_TABLE_START			0xe9
 
-struct ts_function_descriptor {
+#define PAGE_SELECT_REG					0xFF		/* Button exists Page 02 */
+#define PAGE_MAX_NUM					4			/* number of page register */
+
+
+struct function_descriptor {
 	u8 	query_base;
 	u8 	command_base;
 	u8 	control_base;
 	u8 	data_base;
 	u8 	int_source_count;
 	u8 	id;
+};
+
+struct ts_ic_function {
+	struct function_descriptor dsc;
+	u8 	function_page;
 };
 
 struct finger_data {
@@ -64,11 +73,12 @@ struct synaptics_ts_data {
 	struct regulator*	regulator_vio;
 	struct i2c_client*	client;
 	struct touch_platform_data*		pdata;
-	struct ts_function_descriptor	common_dsc;
-	struct ts_function_descriptor	finger_dsc;
-	struct ts_function_descriptor	button_dsc;
-	struct ts_function_descriptor	flash_dsc;
-	struct cur_touch_data		ts_data;
+	struct ts_ic_function	common_fc;
+	struct ts_ic_function	finger_fc;
+	struct ts_ic_function	button_fc;
+	struct ts_ic_function	analog_fc;	/* FIXME: not used in ClearPad3000 serise */
+	struct ts_ic_function	flash_fc;
+	struct cur_touch_data	ts_data;
 	struct touch_fw_info*	fw_info;
 	struct interrupt_bit_mask	interrupt_mask;
 };
@@ -83,4 +93,8 @@ enum{
 
 /* extern function */
 extern int FirmwareUpgrade(struct synaptics_ts_data *ts, const char* fw_path);
+int synaptics_ts_page_data_read(struct i2c_client *client, u8 page, u8 reg, int size, u8 *data);
+int synaptics_ts_page_data_write(struct i2c_client *client, u8 page, u8 reg, int size, u8 *data);
+int synaptics_ts_page_data_write_byte(struct i2c_client *client, u8 page, u8 reg, u8 data);
+
 #endif

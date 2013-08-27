@@ -16,7 +16,7 @@
 
 #include <userDataBackUpDiag.h>
 #include <userDataBackUpTypeDef.h> 
-#include <../../kernel/arch/arm/mach-msm/smd_private.h>
+#include <smd_private.h>
 #include <linux/slab.h>
 
 #include <board_lge.h>
@@ -771,6 +771,7 @@ void* LGF_TestModeKeyData(test_mode_req_type * pReq, DIAG_TEST_MODE_F_rsp_type *
     return pRsp;
 }
 
+#ifdef CONFIG_USB_G_LGE_ANDROID
 extern struct device *get_atcmd_dev(void);
 
 void* LGF_TestModeSleepMode(test_mode_req_type * pReq, DIAG_TEST_MODE_F_rsp_type * pRsp)
@@ -805,10 +806,11 @@ void* LGF_TestModeSleepMode(test_mode_req_type * pReq, DIAG_TEST_MODE_F_rsp_type
 
     return pRsp;
 }
+#endif
 
 void* LGF_TestModeVirtualSimTest(test_mode_req_type * pReq, DIAG_TEST_MODE_F_rsp_type * pRsp)
 {
-#ifdef CONFIG_MACH_LGE_325_BOARD //                           
+#if defined(CONFIG_MACH_LGE_325_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined (CONFIG_MACH_LGE_IJB_BOARD_SKT)
     pRsp->ret_stat_code = TEST_OK_S;
 #else // FOR CAYMAN
 	DIAG_TEST_MODE_F_req_type req_ptr; 
@@ -1871,7 +1873,7 @@ void* LGF_TestScriptItemSet(test_mode_req_type * pReq, DIAG_TEST_MODE_F_rsp_type
                 break;
             }
 			//                                             
-            #if defined (CONFIG_MACH_LGE_120_BOARD) || defined (CONFIG_MACH_LGE_I_BOARD_VZW) || defined (CONFIG_MACH_LGE_325_BOARD_VZW)|| defined(CONFIG_MACH_LGE_325_BOARD)
+            #if defined (CONFIG_MACH_LGE_120_BOARD) || defined (CONFIG_MACH_LGE_I_BOARD_VZW) || defined (CONFIG_MACH_LGE_325_BOARD_VZW)|| defined(CONFIG_MACH_LGE_325_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_VZW)
             send_to_arm9((void*)&req_ptr, (void*)pRsp);
             printk(KERN_INFO "%s, result : %s\n", __func__, pRsp->ret_stat_code==TEST_OK_S?"OK":"FALSE");
             #else
@@ -1897,7 +1899,7 @@ void* LGF_TestScriptItemSet(test_mode_req_type * pReq, DIAG_TEST_MODE_F_rsp_type
 
         default:
 			//                                             
-            #if defined (CONFIG_MACH_LGE_120_BOARD) || defined (CONFIG_MACH_LGE_I_BOARD_VZW) || defined (CONFIG_MACH_LGE_325_BOARD_VZW)|| defined(CONFIG_MACH_LGE_325_BOARD)
+            #if defined (CONFIG_MACH_LGE_120_BOARD) || defined (CONFIG_MACH_LGE_I_BOARD_VZW) || defined (CONFIG_MACH_LGE_325_BOARD_VZW)|| defined(CONFIG_MACH_LGE_325_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_VZW)
             send_to_arm9((void*)&req_ptr, (void*)pRsp);
             printk(KERN_INFO "%s, cmd : %d, result : %s\n", __func__, pReq->test_mode_test_scr_mode, \
                 pRsp->ret_stat_code==TEST_OK_S?"OK":"FALSE");
@@ -2068,7 +2070,7 @@ PACK (void *)LGE_Dload_SRD (PACK (void *)req_pkt_ptr, uint16 pkg_len)
             break;
 
         case USERDATA_BACKUP_REQUEST:
-            remote_rpc_srd_cmmand(req_ptr, rsp_ptr);  //userDataBackUpStart() ?¬ê¸°??... shared ram ?€???˜ë„ë¡? .. 
+            remote_rpc_srd_cmmand(req_ptr, rsp_ptr);  //userDataBackUpStart() ?\ACê¸°??... shared ram ?\80???\98ë„\EB\A1? .. 
             diag_userDataBackUp_entrySet(req_ptr,rsp_ptr,0);  //write info data ,  after rpc respons include write_sector_counter  
 
             //todo ..  rsp_prt->header.write_sector_counter,  how about checking  no active nv item  ; 
@@ -2126,8 +2128,8 @@ PACK (void *)LGE_Dload_SRD (PACK (void *)req_pkt_ptr, uint16 pkg_len)
             }
             load_srd_shard_base+=1200*256 ; //mdm ram offset
 
-            remote_rpc_srd_cmmand(req_ptr, rsp_ptr); //userDataBackUpStart() ?¬ê¸°??... ram ?€???˜ë„ë¡? .. 
-            diag_userDataBackUp_entrySet(req_ptr,rsp_ptr,1); //write info data ,  after rpc respons include write_sector_counter  remote_rpc_srd_cmmand(req_ptr, rsp_ptr);  //userDataBackUpStart() ?¬ê¸°??... ram ?€???˜ë„ë¡? .. 
+            remote_rpc_srd_cmmand(req_ptr, rsp_ptr); //userDataBackUpStart() ?\ACê¸°??... ram ?\80???\98ë„\EB\A1? .. 
+            diag_userDataBackUp_entrySet(req_ptr,rsp_ptr,1); //write info data ,  after rpc respons include write_sector_counter  remote_rpc_srd_cmmand(req_ptr, rsp_ptr);  //userDataBackUpStart() ?\ACê¸°??... ram ?\80???\98ë„\EB\A1? .. 
             write_size= rsp_ptr->rsp_data.write_sector_counter *256; //return nv backup counters  
 
             if( write_size >0x15000)  //384K = mode ram (300K) + mdm (80K)
@@ -2227,8 +2229,10 @@ testmode_user_table_entry_type testmode_mstr_tbl[TESTMODE_MSTR_TBL_SIZE] =
     {TEST_MODE_MEMORY_CAPA_TEST,            not_supported_command_handler,    ARM11_PROCESSOR},
 #else // FOR CAYMAN   
     {TEST_MODE_MEMORY_CAPA_TEST,            LGF_MemoryVolumeCheck,    ARM11_PROCESSOR},    
-#endif    
+#endif
+#ifdef CONFIG_USB_G_LGE_ANDROID    
     {TEST_MODE_SLEEP_MODE_TEST,             LGF_TestModeSleepMode,            ARM11_PROCESSOR},
+#endif
 #if defined(CONFIG_MACH_LGE_325_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined (CONFIG_MACH_LGE_IJB_BOARD_SKT)     
     {TEST_MODE_SPEAKER_PHONE_TEST,          not_supported_command_handler,    ARM11_PROCESSOR},
 #else // FOR CAYMAN       

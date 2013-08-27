@@ -81,8 +81,11 @@ keycode_trans_type keytrans_table[KEY_TRANS_MAP_SIZE]={
 /* index = 31 */{0x0A, V_KEY_EDITBOX},
 /* index = 32 */{0xB5, KEY_VIDEO_CALL},
 #if defined(CONFIG_MACH_LGE_325_BOARD_LGU) || defined(CONFIG_MACH_LGE_I_BOARD_LGU) //                                                          
-/* index = 32 */{0xB6, KEY_VIDEO_CALL_RECEIVE},
-/* index = 32 */{0xB7, KEY_VIDEO_CALL_END},
+/* index = 33 */{0xB6, KEY_VIDEO_CALL_RECEIVE},
+/* index = 34 */{0xB7, KEY_VIDEO_CALL_END},
+/* index = 35 */{0xB8, KEY_PS_CALL},
+/* index = 36 */{0xB9, KEY_PS_CALL_RECEIVE},
+/* index = 37 */{0xBA, KEY_PS_CALL_END},
 #endif
 //                                                                         
 #if defined (CONFIG_MACH_LGE_325_BOARD_VZW)

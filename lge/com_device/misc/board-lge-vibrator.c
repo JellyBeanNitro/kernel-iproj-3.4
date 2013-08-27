@@ -143,7 +143,6 @@ static int vibrator_pwm_set(int enable, int amp)
 	//writel((M_VAL & GPMN_M_MASK), vib_base_ptr + GP_MN_CLK_MDIV_REG );
 	//writel((~( N_VAL - M_VAL )&GPMN_N_MASK), vib_base_ptr + GP_MN_CLK_NDIV_REG);
 #endif
-//                                                      
 
 	if (enable) 
 	{
@@ -178,8 +177,6 @@ static int vibrator_pwm_set(int enable, int amp)
 			if (D_VAL > PWM_MAX_DUTY ) D_VAL = PWM_MAX_DUTY;
 			if (D_VAL < PWM_MIN_DUTY ) D_VAL = PWM_MIN_DUTY;
 						
-//                                                                       
-
 			
 #if 1
 	for(val_cnt =0; val_cnt<3;val_cnt++)
@@ -266,17 +263,12 @@ static int vibrator_pwm_set(int enable, int amp)
 
 static int vibrator_ic_enable_set(int enable)
 {
-//                                                            
 
 	if (enable) {
 		gpio_set_value_cansleep(GPIO_LIN_MOTOR_EN, 1);
-//                                                                                                         
 	} else {
 		gpio_set_value_cansleep(GPIO_LIN_MOTOR_EN, 0);
-//                                                                                                         
-
 	}
-//                                                                    
 	return 0;
 }
 

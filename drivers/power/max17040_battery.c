@@ -306,7 +306,7 @@ int max17040_get_capacity_percent(void)
 		return pre_soc;
 	}
 
-#ifdef CONFIG_MACH_LGE_325_BOARD
+#if defined(CONFIG_MACH_LGE_325_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU)
 	if(lge_battery_info == 0)
 #endif
 	{
@@ -373,7 +373,7 @@ int max17040_get_capacity_percent(void)
 
 		return (int)batt_soc;
 #else
-#ifdef CONFIG_MACH_LGE_I_BOARD //                                                       
+#if defined(CONFIG_MACH_LGE_I_BOARD) && !defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) && !defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) //                                                       
 	batt_soc = (batt_soc - 13000000)/98700;  //cutoff voltage 3.3V
     // pr_info("[Fuel Gauge] batt_soc_calculated = %d\n", (int)batt_soc);
     if (batt_soc > 10000)
@@ -396,7 +396,7 @@ int max17040_get_capacity_percent(void)
 #endif
 		if (batt_soc == 0) {
 			vbatt_mv = max17040_get_mvolts();
-#ifdef CONFIG_MACH_LGE_I_BOARD //                                                       
+#if defined(CONFIG_MACH_LGE_I_BOARD) && !defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) && !defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) //                                                       
 				if (vbatt_mv > 3300) batt_soc = 1;
 #else
 			if (vbatt_mv > batt_mvolts_compare) batt_soc = 1;
@@ -455,7 +455,7 @@ int max17040_get_capacity_percent(void)
 #endif
 
 	}
-#ifdef CONFIG_MACH_LGE_325_BOARD
+#if defined(CONFIG_MACH_LGE_325_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU)
 	else if(lge_battery_info == 1)
 	{
 		batt_soc = buf[0];
@@ -604,7 +604,6 @@ static void max17040_init_model(struct i2c_client *client)
 	values[0] = 0x00; values[1] = 0x00;
 	max17040_write_data(client, 0x3E, &values[0], 2);
 }
-#else
 static int lge_check_battery(void)
 {
 	int soc=0;
@@ -666,103 +665,6 @@ static int lge_check_battery(void)
 
 	return 0;
 }
-//static void max17040_init_model(struct i2c_client *client)
-void max17040_init_model(void)
-{
-	u8 org_rcomp_msb, org_rcomp_lsb;
-	u8 org_ocv_msb, org_ocv_lsb;
-	u8 reg;
-	u8 values[32];
-	int len;
-
-#if 0
-	u8 buf[5];
-	if (lge_check_battery()) {
-		buf[0] = 0x40; buf[1] = 0x00;
-		max17040_write_data(max17040_i2c_client, MAX17040_MODE_MSB, &buf[0], 2);
-		msleep(300);
-	}
-#endif
-
-	/* 1 : Unlock Model Access */
-	values[0] = 0x4A; values[1] = 0x57;
-	max17040_write_data(max17040_i2c_client, 0x3E, &values[0], 2);
-
-	/* 2 : Read Original RCOMP and OCV Register */
-	len = max17040_read_data(max17040_i2c_client, MAX17040_RCOMP_MSB, &values[0], 4);
-	org_rcomp_msb = values[0]; org_rcomp_lsb = values[1];
-	org_ocv_msb = values[2]; org_ocv_lsb = values[3];
-
-	/* 3 : Write OCV Register */
-	values[0] = 0xE1; values[1] = 0x60;
-	max17040_write_data(max17040_i2c_client, MAX17040_OCV_MSB, &values[0], 2);
-
-	/* 4 : Write RCOMP Register */
-#if defined(CONFIG_MACH_LGE_I_BOARD_DCM)
-	values[0] = 0x60; values[1] = 0x00;
-#else
-	values[0] = 0xFF; values[1] = 0x00;
-#endif
-	max17040_write_data(max17040_i2c_client, MAX17040_RCOMP_MSB, &values[0], 2);
-
-	/* 5 : Write the Model - Write 64bytes model */
-	len = 16;
-	reg = 0x40;
-	values[0]  = 0x9E; values[1]  = 0x00; values[2]  = 0xB5; values[3]  = 0xA0;
-	values[4]  = 0xB8; values[5]  = 0x90; values[6]  = 0xBA; values[7]  = 0x60;
-	values[8]  = 0xBA; values[9]  = 0xA0; values[10] = 0xBB; values[11] = 0x00;
-	values[12] = 0xBB; values[13] = 0x40; values[14] = 0xBB; values[15] = 0x90;
-	max17040_write_data(max17040_i2c_client, reg, &values[0], len);
-
-	reg = 0x50;
-	values[0]  = 0xBB; values[1]  = 0xD0; values[2]  = 0xBC; values[3]  = 0x20;
-	values[4]  = 0xBE; values[5]  = 0x50; values[6]  = 0xC1; values[7]  = 0x50;
-	values[8]  = 0xC6; values[9]  = 0xB0; values[10] = 0xCD; values[11] = 0x50;
-	values[12] = 0xD1; values[13] = 0xE0; values[14] = 0xD7; values[15] = 0x60;
-	max17040_write_data(max17040_i2c_client, reg, &values[0], len);
-
-	reg = 0x60;
-	values[0]  = 0x00; values[1]  = 0x20; values[2]  = 0x22; values[3]  = 0x00;
-	values[4]  = 0x00; values[5]  = 0x20; values[6]  = 0x53; values[7]  = 0x00;
-	values[8]  = 0x36; values[9]  = 0x10; values[10] = 0x74; values[11] = 0x50;
-	values[12] = 0x5D; values[13] = 0x10; values[14] = 0x60; values[15] = 0x10;
-	max17040_write_data(max17040_i2c_client, reg, &values[0], len);
-
-	reg = 0x70;
-	values[0]  = 0x4C; values[1]  = 0xD0; values[2]  = 0x1B; values[3]  = 0xD0;
-	values[4]  = 0x28; values[5]  = 0xF0; values[6]  = 0x11; values[7]  = 0xF0;
-	values[8]  = 0x11; values[9]  = 0xF0; values[10] = 0x10; values[11] = 0xF0;
-	values[12] = 0x0C; values[13] = 0xF0; values[14] = 0x0C; values[15] = 0xF0;
-	max17040_write_data(max17040_i2c_client, reg, &values[0], len);
-
-	/* 6 : Delay at least 150mS */
-	msleep(150);
-
-	/* 7 : Write OCV Register */
-	values[0] = 0xE1; values[1] = 0x60;
-	max17040_write_data(max17040_i2c_client, MAX17040_OCV_MSB, &values[0], 2);
-
-	/* 8 : Delay between 150mS and 600mS */
-	msleep(150);
-
-	/* 9 : Read SOC Register */
-	len = max17040_read_data(max17040_i2c_client, MAX17040_SOC_MSB, &values[0], 2);
-
-	if (values[0] >= 0xE6 && values[0] <= 0xE8)
-		pr_info("%s: Model Guage was loaded successful!!!(%02x)\n", __func__, values[0]);
-	else
-		pr_info("%s: Model Guage was not loaded successful!!!T.T(%02x)\n", __func__, values[0]);
-
-	/* 10 : Restore RCOMP and OCV */
-	values[0] = org_rcomp_msb; values[1] = org_rcomp_lsb;
-	values[2] = org_ocv_msb; values[3] = org_ocv_lsb;
-	max17040_write_data(max17040_i2c_client, MAX17040_RCOMP_MSB, &values[0], 4);
-
-	/* 11 : Lock Model Access */
-	values[0] = 0x00; values[1] = 0x00;
-	max17040_write_data(max17040_i2c_client, 0x3E, &values[0], 2);
-}
-EXPORT_SYMBOL(max17040_init_model);
 
 void max17040_quick_start(void)
 {
@@ -774,13 +676,11 @@ void max17040_quick_start(void)
 		msleep(300);
 	}
 }
-EXPORT_SYMBOL(max17040_quick_start);
 #endif
-/*                                         */
 
 void max17040_update_rcomp(int temp)
 {
-#ifdef CONFIG_MACH_LGE_I_BOARD //                         
+#if defined(CONFIG_MACH_LGE_I_BOARD) && !defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) && !defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) //                         
 	u8 startingRcomp = 0x60;
 	int tempCoHot = -125;	//-12.5
 	int tempCoCold = -3425; //-342.5
@@ -800,11 +700,11 @@ void max17040_update_rcomp(int temp)
 #ifdef LGE_DEBUG
 	max17040_read_data(max17040_i2c_client, MAX17040_RCOMP_MSB, &buf[2], 2);
 #endif
-#ifdef CONFIG_MACH_LGE_325_BOARD
+#if defined(CONFIG_MACH_LGE_325_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU)
 	if(lge_battery_info == 0)
 #endif
 	{
-#ifdef CONFIG_MACH_LGE_I_BOARD //                         
+#if defined(CONFIG_MACH_LGE_I_BOARD) && !defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) && !defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) //                         
                 if (temp > 20)
                 newRcomp = startingRcomp + (int)((temp - 20)*tempCoHot/1000);
                 else if (temp < 20)
@@ -820,7 +720,7 @@ void max17040_update_rcomp(int temp)
 			newRcomp = startingRcomp;
 #endif
 	}
-#ifdef CONFIG_MACH_LGE_325_BOARD
+#if defined(CONFIG_MACH_LGE_325_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU)
 	else if(lge_battery_info == 1)
 	{
 		startingRcomp = 0xC0;
@@ -966,14 +866,14 @@ static void max17040_get_soc(struct i2c_client *client)
 
 	max17040_read_data(client, MAX17040_SOC_MSB, &buf[0], 2);
 
-#ifdef CONFIG_MACH_LGE_325_BOARD
+#if defined(CONFIG_MACH_LGE_325_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU)
 	if(lge_battery_info == 0)
 #endif
 	{
 		soc = ((buf[0]*256) + buf[1])*19531; /* 0.001953125 */
 		soc /= 10000000;
 	}
-#ifdef CONFIG_MACH_LGE_325_BOARD
+#if defined(CONFIG_MACH_LGE_325_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU)
 	else if(lge_battery_info == 1)
 	{
 		soc = buf[0];
@@ -1135,11 +1035,11 @@ static int __devinit max17040_probe(struct i2c_client *client,
 #endif
 #endif
 
-	//                            
+#ifdef CONFIG_LGE_FUEL_GAUGE
 	//	max17040_quick_start(); /* move the SBL3 */
-	//#else
-	//	max17040_reset(client);
-	//#endif
+#else
+	max17040_reset(client);
+#endif
 	max17040_get_version(client);
 
 #ifdef CONFIG_MACH_LGE_325_BOARD

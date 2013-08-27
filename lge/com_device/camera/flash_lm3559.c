@@ -302,7 +302,7 @@ static struct led_classdev lm3559_flash_led = {
 
 static int lm3559_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	unsigned short check_rev = 0;
+//	unsigned short check_rev = 0;		// for compile after not to use CDBG
 	int rc = 0;
 
 	CDBG(KERN_INFO"%s: i2c probe start\n", __func__);
@@ -315,7 +315,8 @@ static int lm3559_probe(struct i2c_client *client, const struct i2c_device_id *i
 
 	led_classdev_register(&client->dev, &lm3559_flash_led);
 	
-	CDBG("%s: check_rev[0x%x] gpio_flen[%d]\n",__func__,check_rev,lm3559_led_flash_pdata->gpio_en);
+//	CDBG("%s: check_rev[0x%x] gpio_flen[%d]\n",__func__,check_rev,lm3559_led_flash_pdata->gpio_en);
+	CDBG("%s: gpio_flen[%d]\n",__func__,lm3559_led_flash_pdata->gpio_en);		// for compile after not to use CDBG
 
 	gpio_request(lm3559_led_flash_pdata->gpio_en, "cam_flash_en");
 

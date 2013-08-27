@@ -15,6 +15,14 @@
 #include "msm_ispif.h"
 #include "msm_camera_i2c_mux.h"
 
+#if defined(CONFIG_LGE_DISPLAY_MIPI_LGIT_IJB_VIDEO_HD_PT) || defined(CONFIG_LGE_DISPLAY_MIPI_LGIT_VIDEO_HD_PT)
+#define LGIT_IEF_SWITCH
+#ifdef LGIT_IEF_SWITCH
+extern int mipi_lgit_lcd_ief_off(void);
+extern int mipi_lgit_lcd_ief_on(void);
+#endif
+#endif
+
 /*=============================================================*/
 int32_t msm_sensor_adjust_frame_lines(struct msm_sensor_ctrl_t *s_ctrl,
 	uint16_t res)
@@ -111,6 +119,11 @@ void msm_sensor_start_stream(struct msm_sensor_ctrl_t *s_ctrl)
 		s_ctrl->msm_sensor_reg->start_stream_conf,
 		s_ctrl->msm_sensor_reg->start_stream_conf_size,
 		s_ctrl->msm_sensor_reg->default_data_type);
+
+  #ifdef LGIT_IEF_SWITCH
+  if(system_state != SYSTEM_BOOTING)
+    mipi_lgit_lcd_ief_off();
+  #endif
 }
 
 void msm_sensor_stop_stream(struct msm_sensor_ctrl_t *s_ctrl)
@@ -642,7 +655,6 @@ int32_t msm_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 		pr_err("%s: enable regulator failed\n", __func__);
 		goto enable_vreg_failed;
 	}
-
 	rc = msm_camera_config_gpio_table(data, 1);
 	if (rc < 0) {
 		pr_err("%s: config gpio failed\n", __func__);
@@ -693,7 +705,8 @@ int32_t msm_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 	return rc;
 
 enable_clk_failed:
-		msm_camera_config_gpio_table(data, 0);
+	msm_camera_config_gpio_table(data, 0);
+
 config_gpio_failed:
 	msm_camera_enable_vreg(&s_ctrl->sensor_i2c_client->client->dev,
 			s_ctrl->sensordata->sensor_platform_info->cam_vreg,
@@ -717,6 +730,12 @@ int32_t msm_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 	struct msm_camera_sensor_info *data = s_ctrl->sensordata;
 	CDBG("%s\n", __func__);
 	pr_err("%s: E: %s\n", __func__, data->sensor_name); /*                                                                 */
+
+  #ifdef LGIT_IEF_SWITCH
+  if(system_state != SYSTEM_BOOTING)
+    mipi_lgit_lcd_ief_on();
+  #endif
+
 	if (data->sensor_platform_info->i2c_conf &&
 		data->sensor_platform_info->i2c_conf->use_i2c_mux)
 		msm_sensor_disable_i2c_mux(
@@ -832,6 +851,7 @@ power_down:
 int32_t msm_sensor_power(struct v4l2_subdev *sd, int on)
 {
 	int rc = 0;
+	char *vt_sensor_name = "mt9m114";
 	struct msm_sensor_ctrl_t *s_ctrl = get_sctrl(sd);
 	mutex_lock(s_ctrl->msm_sensor_mutex);
 	if (on) {
@@ -840,6 +860,10 @@ int32_t msm_sensor_power(struct v4l2_subdev *sd, int on)
 			pr_err("%s: %s power_up failed rc = %d\n", __func__,
 				s_ctrl->sensordata->sensor_name, rc);
 		} else {
+			if(strcmp(s_ctrl->sensordata->sensor_name,vt_sensor_name) == 0) {
+				pr_err("vt sensor sleep 40ms\n");
+				msleep(40);
+			}
 			if (s_ctrl->func_tbl->sensor_match_id)
 				rc = s_ctrl->func_tbl->sensor_match_id(s_ctrl);
 			else
@@ -991,21 +1015,20 @@ int32_t msm_sensor_setting_114(struct msm_sensor_ctrl_t *s_ctrl,
 {
 	int32_t rc = 0;
 	static int csi_config;
- printk("### %s\n", __func__);
+ CDBG("### %s\n", __func__);
 	s_ctrl->func_tbl->sensor_stop_stream(s_ctrl);
-	msleep(30);
+	msleep(5);
 	if (update_type == MSM_SENSOR_REG_INIT) {
-		printk("Register INIT\n");
+		CDBG("Register INIT\n");
 		s_ctrl->curr_csi_params = NULL;
 		msm_sensor_enable_debugfs(s_ctrl);
 		msm_sensor_write_init_settings_114(s_ctrl);
 		csi_config = 0;
 	} else if (update_type == MSM_SENSOR_UPDATE_PERIODIC) {
-		printk("PERIODIC : %d\n", res);
+		CDBG("PERIODIC : %d\n", res);
 		msm_sensor_write_conf_array_114(
 			s_ctrl->sensor_i2c_client,
 			s_ctrl->msm_sensor_reg->mode_settings, res);
-		msleep(30);
 		if (!csi_config) {
 			s_ctrl->curr_csic_params = s_ctrl->csic_params[res];
 			CDBG("CSI config in progress\n");
@@ -1014,15 +1037,14 @@ int32_t msm_sensor_setting_114(struct msm_sensor_ctrl_t *s_ctrl,
 				s_ctrl->curr_csic_params);
 			CDBG("CSI config is done\n");
 			mb();
-			msleep(30);
+			msleep(50);
 			csi_config = 1;
 		}
 		v4l2_subdev_notify(&s_ctrl->sensor_v4l2_subdev,
 			NOTIFY_PCLK_CHANGE,
 			&s_ctrl->sensordata->pdata->ioclk.vfe_clk_rate);
-		printk("### %s sensor_start_stream\n",__func__);
+		CDBG("### %s sensor_start_stream\n",__func__);
 		s_ctrl->func_tbl->sensor_start_stream(s_ctrl);
-		msleep(50);
 	}
 	return rc;
 }

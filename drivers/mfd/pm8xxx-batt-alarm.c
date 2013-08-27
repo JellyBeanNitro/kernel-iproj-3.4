@@ -128,7 +128,11 @@
 
 #ifdef CONFIG_LGE_PM_BATTERY_ALARM
 #define LGE_DEBUG
+#if defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU)
+#define DEFAULT_THRESHOLD_LOWER_CALC(x)		(3500 - (x*0))
+#else
 #define DEFAULT_THRESHOLD_LOWER_CALC(x)		(3300 - (x*0))
+#endif
 #define DEFAULT_THRESHOLD_UPPER_CALC(x)		(4350 - (x*150))
 
 #define P00_THRESHOLD_LOWER(x)		DEFAULT_THRESHOLD_LOWER_CALC(x)		/* 3300mV */
@@ -746,6 +750,20 @@ int pm8xxx_batt_alarm_config_lge(void)
     }
     else
         threshold_mv = AUTO_CHARGING_RESUME_MV_CALC(lge_battery_info);
+
+
+    /* BUG Fix : The battery alarm should be got off when the threshold is changed. */
+    rc = pm8xxx_batt_alarm_disable(PM8XXX_BATT_ALARM_LOWER_COMPARATOR);
+    if (rc) {
+        pr_err("disable lower failed, rc=%d\n", rc);
+        goto done;
+    }
+
+    rc = pm8xxx_batt_alarm_disable(PM8XXX_BATT_ALARM_UPPER_COMPARATOR);
+    if (rc) {
+        pr_err("disable upper failed, rc=%d\n", rc);
+        goto done;
+    }
 
     /* Use default values when no platform data is provided. */
     rc = pm8xxx_batt_alarm_threshold_set(PM8XXX_BATT_ALARM_LOWER_COMPARATOR, threshold_mv);

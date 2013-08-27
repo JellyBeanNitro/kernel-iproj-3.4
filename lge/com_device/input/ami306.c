@@ -147,11 +147,6 @@ static u32 report_cnt = 0;
 
 static u8 i2c_read_addr, i2c_read_len;
 
-#ifdef CONFIG_MACH_LGE_I_BOARD_VZW
-//seungkwan.jung
-static unsigned char ami_xyz[3]={0,};
-//seungkwan.jung
-#endif
 static int AMI306_I2c_Read(u8 regaddr, u8 *buf, u8 buf_len)
 {
 	int res = 0;
@@ -654,13 +649,7 @@ static int AMI306_Report_Value(int iEnable)
 		AMID("nmx: %d, nmy: %d, nmz: %d\n", ami306mid_data.nm.x, ami306mid_data.nm.y, ami306mid_data.nm.z);
 		AMID("mag_status: %d\n", ami306mid_data.status);
 	}
-#ifdef CONFIG_MACH_LGE_I_BOARD_VZW
-	//BEGIN:seungkwan.jung
-	ami_xyz[0] = ami306mid_data.nm.x;
-	ami_xyz[1] = ami306mid_data.nm.y;
-	ami_xyz[2] = ami306mid_data.nm.z;
-	//END:seungkwan.jung
-#endif	
+
 	if (report_enable)
 		input_sync(data->input_dev);
 
@@ -939,31 +928,7 @@ static ssize_t store_delay_value(struct device *dev, struct device_attribute *at
 	
 	return 0;
 }
-#ifdef CONFIG_MACH_LGE_I_BOARD_VZW
-//BEGIN:seungkwan.jung
-static ssize_t data_x(struct device *dev, 
-		struct device_attribute *attr, char *buf)
-{
-	
-	return sprintf(buf, "%d\n",ami_xyz[0]);
-}
 
-static ssize_t data_y(struct device *dev, 
-		struct device_attribute *attr, char *buf)
-{
-	
-	return sprintf(buf, "%d\n", ami_xyz[1]);
-}
-
-static ssize_t data_z(struct device *dev, 
-		struct device_attribute *attr, char *buf)
-{
-	
-	return sprintf(buf, "%d\n", ami_xyz[2]);
-
-
-}
-#endif
 static ssize_t show_report_cnt(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	printk(KERN_INFO "%s: report_cnt: %d\n", __func__, report_cnt);
@@ -973,11 +938,6 @@ static ssize_t show_report_cnt(struct device *dev, struct device_attribute *attr
 	else
 		return sprintf(buf, "%d\n", -1);
 }
-#ifdef CONFIG_MACH_LGE_I_BOARD_VZW
-static DEVICE_ATTR(X, S_IRUGO, data_x, NULL);
-static DEVICE_ATTR(Y, S_IRUGO, data_y, NULL);
-static DEVICE_ATTR(Z, S_IRUGO, data_z, NULL);
-#endif
 static DEVICE_ATTR(chipinfo, S_IRUGO, show_chipinfo_value, NULL);
 static DEVICE_ATTR(sensordata, S_IRUGO, show_sensordata_value, NULL);
 static DEVICE_ATTR(posturedata, S_IRUGO, show_posturedata_value, NULL);
@@ -1008,13 +968,6 @@ static struct attribute *ami306_attributes[] = {
 	&dev_attr_enable.attr,
 	&dev_attr_delay.attr,
 	&dev_attr_mag_data.attr,
-#ifdef CONFIG_MACH_LGE_I_BOARD_VZW
-	//BEGIN:seungkwan.jung
-	&dev_attr_X.attr,
-	&dev_attr_Y.attr,
-	&dev_attr_Z.attr,
-	//END:seungkwan.jung
-#endif	
 	&dev_attr_cnt.attr,
 	NULL,
 };
@@ -1917,11 +1870,6 @@ static int __devinit ami306_probe(struct i2c_client *client,
 	err = device_create_file(&data->input_dev->dev, &dev_attr_delay);
 	err = device_create_file(&data->input_dev->dev, &dev_attr_mag_data);
 	err = device_create_file(&data->input_dev->dev, &dev_attr_cnt);
-#ifdef CONFIG_MACH_LGE_I_BOARD_VZW	
-	err = device_create_file(&data->input_dev->dev, &dev_attr_X);
-	err = device_create_file(&data->input_dev->dev, &dev_attr_Y);
-	err = device_create_file(&data->input_dev->dev, &dev_attr_Z);
-#endif	
 	if (err) {
 		AMIE("ami306 sysfs register failed\n");
 		goto exit_sysfs_create_group_failed;
@@ -1953,11 +1901,6 @@ static int __devexit ami306_remove(struct i2c_client *client)
 	sysfs_remove_group(&client->dev.kobj, &ami306_attribute_group);
 	device_remove_file(&data->input_dev->dev, &dev_attr_enable);
 	device_remove_file(&data->input_dev->dev, &dev_attr_delay);
-#ifdef CONFIG_MACH_LGE_I_BOARD_VZW		
-	device_remove_file(&data->input_dev->dev, &dev_attr_X);
-	device_remove_file(&data->input_dev->dev, &dev_attr_Y);
-	device_remove_file(&data->input_dev->dev, &dev_attr_Z);
-#endif	
 	device_remove_file(&data->input_dev->dev, &dev_attr_cnt);
 
 

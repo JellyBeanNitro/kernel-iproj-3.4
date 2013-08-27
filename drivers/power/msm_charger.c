@@ -56,7 +56,7 @@
 
 #define MSM_CHARGER_GAUGE_MISSING_VOLTS 3500
 #define MSM_CHARGER_GAUGE_MISSING_TEMP  35
-#ifdef CONFIG_MACH_LGE_I_BOARD_SKT
+#if defined(CONFIG_MACH_LGE_I_BOARD_SKT)
 //ACC(Adaptive Charging-current Contorl)
 #define ACC_ENABLE
 
@@ -107,7 +107,7 @@ enum msm_battery_status {
 #endif
 /*                                     */
 
-#ifdef CONFIG_MACH_LGE_120_BOARD
+#if defined(CONFIG_MACH_LGE_120_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
 //                                                                         
 #define FAKE_BATT_ENABLED 1
 #define FAKE_BATT_DISABLED 0
@@ -163,7 +163,7 @@ struct msm_charger_mux {
 	unsigned int max_voltage;
 	unsigned int min_voltage;
 
-#ifdef CONFIG_MACH_LGE_120_BOARD
+#if defined(CONFIG_MACH_LGE_120_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
 // sujin.shin [TEMP_CONTROL]
 	u8 temp_control;
 #endif	
@@ -220,7 +220,7 @@ static struct msm_battery_gauge *msm_batt_gauge;
 static struct pseudo_batt_info_type pseudo_batt_info = {
 	.mode = 0,
 };
-#ifdef CONFIG_MACH_LGE_120_BOARD
+#if defined(CONFIG_MACH_LGE_120_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
 //sujin.shin [TEMP_CONTROL]
 	static struct pseudo_batt_info_type booting_set = {
 	.mode = 1,
@@ -474,7 +474,7 @@ int get_battery_temperature_adc(void)
 EXPORT_SYMBOL(get_battery_temperature_adc);
 #endif
 #endif
-#ifdef CONFIG_LGE_PM_TA_COMPENSATION
+#if defined(CONFIG_LGE_PM_TA_COMPENSATION) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU)
 extern int is_chg_plugged_in(void);
 #endif
 
@@ -761,11 +761,9 @@ extern bool chg_complete;
 extern bool chg_resume;
 extern bool bq24160_chg_done_once;
 extern int now_chg_state;
-
-extern bool bq24160_chg_plug_in(void);
 #endif
 
-#ifdef CONFIG_MACH_LGE_120_BOARD //sujin.shin [TEMP_CONTROL]
+#if defined(CONFIG_MACH_LGE_120_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
 extern int set_status_power(int val);
 extern int get_status_power(void);
 #endif
@@ -774,7 +772,7 @@ static int msm_batt_power_property_is_writeable(struct power_supply *psy,
 {
 	//printk("%s, \n", __func__);
 	switch (psp) {
-#ifdef CONFIG_MACH_LGE_120_BOARD
+#if defined(CONFIG_MACH_LGE_120_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
 	case POWER_SUPPLY_PROP_PSEUDO_BATT:
 		return 1;
 #endif
@@ -796,13 +794,13 @@ static int msm_batt_power_set_property(struct power_supply *psy,
 			    enum power_supply_property psp,
 			    const union power_supply_propval *val)
 {
-#ifdef CONFIG_MACH_LGE_120_BOARD
+#if defined(CONFIG_MACH_LGE_120_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
 	char set_val;
 	int retval = 0;
 #endif
 	
 	switch (psp) {		
-#ifdef CONFIG_MACH_LGE_120_BOARD
+#if defined(CONFIG_MACH_LGE_120_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
 	case POWER_SUPPLY_PROP_PSEUDO_BATT:
 		printk("!!!!%s, PSEUDO_BATT = %d\n", __func__, val->intval);
 		if(val->intval == 1){
@@ -842,20 +840,6 @@ static int msm_batt_power_set_property(struct power_supply *psy,
 	return 0;
 }
 EXPORT_SYMBOL(msm_batt_power_set_property);
-/*                                         */
-int cur_soc_val = 0;
-int nv_soc_val = 0;
-static int pre_soc_val = 0;
-static int orig_cur_soc_val = 0;
-static int orig_prev_soc_val = 0;
-static int first_tuning_value = 0;
-static bool is_write_available = false;
-static bool is_rpc_ok = false;
-static bool is_first_diff = false;
-
-extern int batt_gauge_cal_nv_read(void);
-extern uint32_t get_oem_rapi_open_cnt(void);
-/*                                         */
 
 
 static int msm_batt_power_get_property(struct power_supply *psy,
@@ -944,82 +928,16 @@ static int msm_batt_power_get_property(struct power_supply *psy,
 	  val->intval = 100;
 	else
   {
-    /*                                         */
     bq24160_chg_done_once = false;
-    cur_soc_val = get_prop_batt_capacity();
-    orig_cur_soc_val = cur_soc_val;
-
-    if((4100 >= get_prop_battery_mvolts()) && (get_prop_battery_mvolts() >= 3600) && !bq24160_chg_plug_in())
-    {  
-       // For NV access only one time!!
-       if(is_rpc_ok == false)
-       {          
-          if(batt_gauge_cal_nv_read() != 0)
-          {
-            pr_info("######### [FUEL] NV Val = %d ########\n", nv_soc_val);
-            is_rpc_ok = true;
-          }
-       }
-       
-      //if(get_oem_rapi_open_cnt() > 0)
-      {
-        // make the referrence value just one time
-        if((!is_write_available) &&  is_rpc_ok)  // First Check
-        {        
-          if((cur_soc_val > nv_soc_val + 2) && (cur_soc_val < nv_soc_val + 7)) // Abnormal Gauge
-          {
-            cur_soc_val = nv_soc_val;
-            first_tuning_value = cur_soc_val;
-          }
-          else if((cur_soc_val < nv_soc_val - 2) && (cur_soc_val > nv_soc_val - 7))  // Abnormal Gauge
-          {
-            cur_soc_val = nv_soc_val - 2;
-            first_tuning_value = cur_soc_val;
-          }
-          else  // Normal Gauging
-          {
-            first_tuning_value = 0;
-          }
-
-          is_write_available = true;
-        }
-        else if(is_write_available && is_rpc_ok)
-        {
-          if(first_tuning_value != 0)
-          {
-            int temp_diff_value = 0;
-
-            temp_diff_value = orig_prev_soc_val - orig_cur_soc_val;
-
-            if(!is_first_diff)
-            {
-              if(temp_diff_value > 2)
-                temp_diff_value = 2;
-            }
-
-            if(temp_diff_value >= 0)
-            {
-              cur_soc_val = pre_soc_val - temp_diff_value;
-            }
-            else
-            {
-              cur_soc_val = pre_soc_val;
-            }
-          }
-
-          is_first_diff = true;
-        }
-      }
-    }
-
-    //pr_info("Posting Val = %d\n", cur_soc_val);
-    
-    orig_prev_soc_val = orig_cur_soc_val;
-    pre_soc_val = cur_soc_val;
-    val->intval = cur_soc_val;
-    /*                                         */
+	val->intval = get_prop_batt_capacity();
   }
 #else
+
+#if defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) || defined(CONFIG_MACH_LGE_120_BOARD)
+	if(pseudo_batt_info.mode == 1)
+	  val->intval = pseudo_batt_info.capacity; //80
+	else
+#endif
 	if((0 == battery_info_get()) && ((6 ==get_ext_cable_type_value())||(7 ==get_ext_cable_type_value()))) /* 6,7 = LT cable*/
 		val->intval = 70;//for test only
 	else if (msm_chg.batt_status ==
@@ -1028,83 +946,7 @@ static int msm_batt_power_get_property(struct power_supply *psy,
 			 &&(get_prop_batt_capacity() >= 95))
 		val->intval = 100;
 	else
-  { 
-    /*                                                   */
-    cur_soc_val = get_prop_batt_capacity();
-    orig_cur_soc_val = cur_soc_val;
-#if defined(CONFIG_LGE_PM_TA_COMPENSATION) || defined(CONFIG_MACH_LGE_120_BOARD)
-    if((4100 >= get_prop_battery_mvolts()) && (get_prop_battery_mvolts() >= 3600) && !is_chg_plugged_in())
-#else
-    if((4100 >= get_prop_battery_mvolts()) && (get_prop_battery_mvolts() >= 3600))
-#endif
-    {  
-       // For NV access only one time!!
-       if(is_rpc_ok == false)
-       {          
-          if(batt_gauge_cal_nv_read() != 0)
-          {
-            pr_info("######### [FUEL] NV Val = %d ########\n", nv_soc_val);
-            is_rpc_ok = true;
-          }
-       }
-       
-      //if(get_oem_rapi_open_cnt() > 0)
-      {
-        // make the referrence value just one time
-        if((!is_write_available) &&  is_rpc_ok)  // First Check
-        {        
-          if((cur_soc_val > nv_soc_val + 2) && (cur_soc_val < nv_soc_val + 7)) // Abnormal Gauge
-          {
-            cur_soc_val = nv_soc_val;
-            first_tuning_value = cur_soc_val;
-          }
-          else if((cur_soc_val < nv_soc_val - 2) && (cur_soc_val > nv_soc_val - 7))  // Abnormal Gauge
-          {
-            cur_soc_val = nv_soc_val - 2;
-            first_tuning_value = cur_soc_val;
-          }
-          else  // Normal Gauging
-          {
-            first_tuning_value = 0;
-          }
-
-          is_write_available = true;
-        }
-        else if(is_write_available && is_rpc_ok)
-        {
-          if(first_tuning_value != 0)
-          {
-            int temp_diff_value = 0;
-
-            temp_diff_value = orig_prev_soc_val - orig_cur_soc_val;
-
-            if(!is_first_diff)
-            {
-              if(temp_diff_value > 2)
-                temp_diff_value = 2;
-            }
-
-            if(temp_diff_value >= 0)
-            {
-              cur_soc_val = pre_soc_val - temp_diff_value;
-            }
-            else
-            {
-              cur_soc_val = pre_soc_val;
-            }
-          }
-          is_first_diff = true;
-        }
-      }
-    }
-
-    //pr_info("Posting Val = %d\n", cur_soc_val);
-    
-    orig_prev_soc_val = orig_cur_soc_val;
-    pre_soc_val = cur_soc_val;
-    val->intval = cur_soc_val;
-    /*                                         */
-  }
+		val->intval = get_prop_batt_capacity();
 #endif
 #endif       
 #if defined(CONFIG_MACH_LGE_I_BOARD_DCM) && defined(CONFIG_LGE_SWITCHING_CHARGER_BQ24160_DOCOMO_ONLY)
@@ -2120,7 +1962,7 @@ static void update_heartbeat(struct work_struct *work)
 	pr_debug("msm-charger %s batt_status= %d\n",
 				__func__, msm_chg.batt_status);
 //sujin.shin [TEMP_CONTROL]
-#ifdef CONFIG_MACH_LGE_120_BOARD
+#if defined(CONFIG_MACH_LGE_120_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
 	if (msm_chg.temp_control == 0xFF)  //When phone is boot completed, 
 	{
 		printk("%s : msm_chg.temp_control value is 0xFF\n", __func__);
@@ -2160,6 +2002,15 @@ static void update_heartbeat(struct work_struct *work)
 		battery_level = get_prop_battery_mvolts();
 		//stop_charging = chg_is_battery_too_hot_or_too_cold(temp_adc,battery_level);
 		stop_charging = chg_is_battery_too_hot_or_too_cold(temp_adc,battery_level,msm_chg.lcd_on_charge_curr_status); //                                      
+/*                                                                                                          */
+#if defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU)
+		if ((pseudo_batt_info.mode == 1)&&
+			((get_ext_cable_type_value() == USB_CABLE_400MA)||
+			(get_ext_cable_type_value() == ABNORMAL_USB_CABLE_400MA))){
+			pm_chg_imaxsel_set(700);
+		}
+#endif
+/* [End] USB charging current is set to 800mA when enabling FAKE mode. */
 /*                                                                                                                                 
                                                                                                                  
                                                                                                                               
@@ -2714,6 +2565,16 @@ void msm_charger_vbus_draw(unsigned int mA)
 {
 	if (usb_hw_chg_priv) {
 		usb_hw_chg_priv->max_source_current = mA;
+/*                                                                                                          */
+#if defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU)
+		if ((pseudo_batt_info.mode == 1)&&
+			((get_ext_cable_type_value() == USB_CABLE_400MA)||
+			(get_ext_cable_type_value() == ABNORMAL_USB_CABLE_400MA))){
+			usb_hw_chg_priv->max_source_current = 700;
+			printk("%s :fake mode - max_source_current = %d \n", __func__, usb_hw_chg_priv->max_source_current);
+		}
+#endif
+/* [End] USB charging current is set to 800mA when enabling FAKE mode */
 //                                         
 		if((msm_chg.chg_current_set == 1) && (msm_chg.capacity > 10)) {
 			usb_hw_chg_priv->max_source_current = 450;
@@ -2731,7 +2592,7 @@ static int __init determine_initial_batt_status(void)
 {
 	/*                  */
 	int rc;
-#ifdef CONFIG_MACH_LGE_120_BOARD
+#if defined(CONFIG_MACH_LGE_120_BOARD) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
 	msm_chg.temp_control = 0xFF;
 #endif
 	//                                         

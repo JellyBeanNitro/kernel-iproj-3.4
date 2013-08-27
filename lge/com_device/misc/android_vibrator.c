@@ -54,7 +54,6 @@ static int android_vibrator_force_set(struct timed_vibrator_data *vib, int nForc
 {
 	/* Check the Force value with Max and Min force value */
 	int vib_dutation_ms = 0;
-//                                                                                                                     
 #if 0    
 	if (nForce > 128) nForce = 128;
 	if (nForce < -128) nForce = -128;
@@ -85,7 +84,6 @@ static int android_vibrator_force_set(struct timed_vibrator_data *vib, int nForc
 	    atomic_set(&vib->vib_status, true);
 
 		hrtimer_start(&vib->timer, ktime_set(vib_dutation_ms / 1000, (vib_dutation_ms % 1000) * 1000000), HRTIMER_MODE_REL);
-//                                                                                                                  
 		
 	}	
 	return 0;
@@ -95,13 +93,10 @@ static void android_vibrator_on(struct work_struct *work)
 {
 	struct timed_vibrator_data *vib = container_of(work, struct timed_vibrator_data, work_vibrator_on);
 	int gain = atomic_read(&vib->vibe_gain);
-	//                                       
-	// suspend /resume logging test	
 	printk(KERN_INFO"%s is stating ... \n", __func__);
 	
 	android_vibrator_force_set(vib, gain);
 
-	// suspend /resume logging test	
 	printk(KERN_INFO"%s is exting ... \n", __func__);
 }
 
@@ -109,13 +104,10 @@ static void android_vibrator_off(struct work_struct *work)
 {
 	struct timed_vibrator_data *vib = container_of(work, struct timed_vibrator_data, work_vibrator_off);
 
-	// suspend /resume logging test	
 	printk(KERN_INFO"%s is stating ... \n", __func__);
 	
-	//                                       
 	android_vibrator_force_set(vib, 0);
 
-	// suspend /resume logging test	
 	printk(KERN_INFO"%s is exting ... \n", __func__);
 }
 

@@ -56,7 +56,7 @@ static struct vsycn_ctrl {
 	int wait_vsync_cnt;
 	int blt_change;
 	int blt_free;
-	int blt_ctrl;	// QCT 20120214
+	int blt_ctrl;
 	int sysfs_created;
 	struct mutex update_lock;
 	struct completion ov_comp;
@@ -195,7 +195,7 @@ int mdp4_dsi_video_pipe_commit(int cndx, int wait)	// QCT Performance
 	}
 	spin_unlock_irqrestore(&vctrl->spin_lock, flags);
 
-#if 0 // QCT 20120214
+#ifndef CONFIG_ARCH_MSM8X60
 	mdp4_overlay_mdp_perf_upd(vctrl->mfd, 1);
 
 	if (vctrl->blt_change) {
@@ -962,7 +962,7 @@ void mdp4_dmap_done_dsi_video(int cndx)
 	if (vctrl->blt_change) {
 		mdp4_overlayproc_cfg(pipe);
 		mdp4_overlay_dmap_xy(pipe);
-#if 0 // QCT 20120214
+#ifndef CONFIG_ARCH_MSM8X60
 		if (pipe->ov_blt_addr) {
 			mdp4_dsi_video_blt_ov_update(pipe);
 			pipe->ov_cnt++;
@@ -979,7 +979,7 @@ void mdp4_dmap_done_dsi_video(int cndx)
 	}
 
 	complete_all(&vctrl->dmap_comp);
-	//                                                                                    
+                                                                           
 	if (mdp_rev <= MDP_REV_41 && pipe->ov_blt_addr == 0)
 		mdp4_mixer_blend_cfg(MDP4_MIXER0);
 	mdp4_overlay_dma_commit(cndx);

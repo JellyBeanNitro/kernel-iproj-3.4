@@ -88,8 +88,6 @@ void mipi_dsi_mdp_stat_inc(int which)
 }
 #endif
 
-#define MIPI_DSI_TX_TIMEOUT_ms	msecs_to_jiffies(VSYNC_PERIOD*20) // 320 msec
-
 void mipi_dsi_init(void)
 {
 	init_completion(&dsi_dma_comp);
@@ -896,7 +894,7 @@ void mipi_dsi_host_init(struct mipi_panel_info *pinfo)
 
 	/* from frame buffer, low power mode */
 	/* DSI_COMMAND_MODE_DMA_CTRL */
-	MIPI_OUTP(MIPI_DSI_BASE + 0x38, 0x10000000);
+	MIPI_OUTP(MIPI_DSI_BASE + 0x38, 0x14000000);
 
 	data = 0;
 	if (pinfo->te_sel)
@@ -934,8 +932,6 @@ void mipi_dsi_host_init(struct mipi_panel_info *pinfo)
 		MIPI_OUTP(MIPI_DSI_BASE + 0x118, 0x23f); /* DSI_CLK_CTRL */
 	else
 		MIPI_OUTP(MIPI_DSI_BASE + 0x118, 0x33f); /* DSI_CLK_CTRL */
-
-	MIPI_OUTP(MIPI_DSI_BASE + 0xA8, 0x10000000);
 
 	dsi_ctrl |= BIT(0);	/* enable dsi */
 	MIPI_OUTP(MIPI_DSI_BASE + 0x0000, dsi_ctrl);
@@ -1447,8 +1443,6 @@ int mipi_dsi_cmds_rx_new(struct dsi_buf *tp, struct dsi_buf *rp,
 
 int mipi_dsi_cmd_dma_tx(struct dsi_buf *tp)
 {
-	unsigned long ret_completion;
-	int ret = 0;
 
 	unsigned long flags;
 
@@ -1458,7 +1452,7 @@ int mipi_dsi_cmd_dma_tx(struct dsi_buf *tp)
 
 	bp = tp->data;
 
-	pr_debug("%s: (len=%d) ", __func__, tp->len );
+	pr_debug("%s: ", __func__);
 	for (i = 0; i < tp->len; i++)
 		pr_debug("%x ", *bp++);
 
@@ -1487,25 +1481,11 @@ int mipi_dsi_cmd_dma_tx(struct dsi_buf *tp)
 	wmb();
 	spin_unlock_irqrestore(&dsi_mdp_lock, flags);
 
-#if 0 // If LCD disconnected, this code cannot be pass. wait unlimited time.
 	wait_for_completion(&dsi_dma_comp);
-	ret = tp->len;
-#else // wait, and return error when Timeout.
-	ret_completion = wait_for_completion_timeout( &dsi_dma_comp, MIPI_DSI_TX_TIMEOUT_ms );
-	if( ret_completion == 0 )	{
-		pr_err("mipi_dsi_cmd_dma_tx FAILED : return = %lu (%x %x %x %x)\n", 
-			ret_completion, tp->data[0], tp->data[1], tp->data[2], tp->data[3] );
-		ret = -1; // return error code;
-	}
-	else {
-		ret = tp->len;
-	}
-#endif 
 
 	dma_unmap_single(&dsi_dev, tp->dmap, tp->len, DMA_TO_DEVICE);
 	tp->dmap = 0;
-
-	return ret;
+	return tp->len;
 }
 
 int mipi_dsi_cmd_dma_rx(struct dsi_buf *rp, int rlen)

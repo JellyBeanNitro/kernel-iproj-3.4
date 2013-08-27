@@ -18,6 +18,8 @@
 #ifndef LGE_TOUCH_CORE_H
 #define LGE_TOUCH_CORE_H
 
+#define MT_PROTOCOL_A
+
 //                            
 
 #define MAX_FINGER	10
@@ -207,7 +209,7 @@ struct touch_device_driver {
 	int		(*probe)		(struct i2c_client *client);
 	void	(*remove)		(struct i2c_client *client);
 	int		(*init)			(struct i2c_client *client, struct touch_fw_info* info);
-	int		(*data)			(struct i2c_client *client, struct t_data* data, struct b_data* button, u8* total_num);
+	int		(*data)			(struct i2c_client *client, struct touch_data* data);
 	int		(*power)		(struct i2c_client *client, int power_ctrl);
 	int		(*ic_ctrl)		(struct i2c_client *client, u8 code, u16 value);
 	int 	(*fw_upgrade)	(struct i2c_client *client, const char* fw_path);
@@ -354,16 +356,18 @@ enum{
 };
 #endif
 
+#define IGNORE_INTERRUPT	100
+
 #define LGE_TOUCH_NAME		"lge_touch"
 
 /* Debug Mask setting */
 #define TOUCH_DEBUG_PRINT   (1)
 #define TOUCH_ERROR_PRINT   (1)
-#define TOUCH_INFO_PRINT   	(1)
+//#define TOUCH_INFO_PRINT   	(1)
 
 #if defined(TOUCH_INFO_PRINT)
 #define TOUCH_INFO_MSG(fmt, args...) \
-		printk(KERN_INFO "[Touch] " fmt, ##args);
+		printk(KERN_INFO "[Touch,%d] " fmt, __LINE__, ##args);
 #else
 #define TOUCH_INFO_MSG(fmt, args...)     {};
 #endif

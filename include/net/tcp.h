@@ -99,7 +99,7 @@ extern void tcp_time_wait(struct sock *sk, int state, int timeo);
 				 */
 				 
 //jk.soh 20120117, LG U+ TCP SYN retry interval				 
-#ifdef CONFIG_MACH_APQ8064_GKU
+#if defined(CONFIG_MACH_LGE_325_BOARD_LGU) || defined(CONFIG_MACH_LGE_I_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU)
 #define TCP_SYN_RETRIES	 4
 #else
 #define TCP_SYN_RETRIES	 5	/* number of times to retry active opening a

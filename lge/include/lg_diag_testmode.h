@@ -457,6 +457,7 @@ typedef union
     test_mode_req_wifi_addr_type wifi_mac_ad;
     test_mode_req_fota_type fota;
     test_mode_req_key_lock_unlock_type key_lock_unlock;
+	test_manufacture_sn_mode_type manufacture_sn_cmd;
     test_mode_req_mlt_enable_type mlt_enable;
     test_mode_req_blow_command_type otp_command;
     test_mode_req_felica_type felica_cmd;

@@ -736,28 +736,23 @@ static struct msm_gpiomux_config msm8x60_gsbi_configs[] __initdata = {
 	},	
 };
 
+#if defined(CONFIG_LGE_NFC_PN544_C2)
 static struct msm_gpiomux_config msm8x60_ebi2_configs[] __initdata = {
 	{
 		.gpio      = 123,
 		.settings = {
-#if defined(CONFIG_LGE_NFC_PN544_C2)
+
 			[GPIOMUX_SUSPENDED] = &nfc_pn544pn65n_irq_cfg,
-#else
-			[GPIOMUX_SUSPENDED] = &ebi2_a_d,
-#endif
 		},
 	},
 	{
 		.gpio      = 130,
 		.settings = {
-#if defined(CONFIG_LGE_NFC_PN544_C2)
 			[GPIOMUX_SUSPENDED] = &nfc_pn544pn65n_ven_cfg,
-#else
-			[GPIOMUX_SUSPENDED] = &ebi2_a_d,
-#endif
 		},
 	},
 };
+#endif
 
 #if defined(CONFIG_USB_PEHCI_HCD) || defined(CONFIG_USB_PEHCI_HCD_MODULE)
 #endif
@@ -1373,10 +1368,11 @@ msm8x60_ijb_skt_gpiomux_cfgs[] __initdata = {
 	{msm8x60_charm_configs, ARRAY_SIZE(msm8x60_charm_configs)},
 #ifdef CONFIG_LGE_AUDIO
 	{msm8x60_audio_configs, ARRAY_SIZE(msm8x60_audio_configs)},
-
+#endif
 #if defined (CONFIG_MACH_LGE_I_BOARD_SKT)
 	{msm8x60_max17040_configs, ARRAY_SIZE(msm8x60_max17040_configs)},
 #endif
+#if defined(CONFIG_LGE_NFC_PN544_C2)
 	{msm8x60_ebi2_configs, ARRAY_SIZE(msm8x60_ebi2_configs)},
 #endif
 	{NULL, 0},

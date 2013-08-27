@@ -15,10 +15,6 @@
  * GNU General Public License for more details.
  */
 
-#if 0 /*                                                        */
-#define DEBUG
-#endif
-
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/kernel.h>
@@ -53,35 +49,14 @@
 #include "mdp.h"
 #include "mdp4.h"
 
-//silent_reset_fusion2 
-#include "../../../lge/include/board_lge.h"
-
 #ifdef CONFIG_FB_MSM_LOGO
 #ifdef CONFIG_LGE_I_DISP_BOOTLOGO
-#define INIT_IMAGE_FILE "/bootimages/boot_logo_00000.rle"
-static int saved_bl_level = 0x7D;
+static int saved_bl_level = 0x33;
 static int boot_mode = 1; // first boot condition
-
-#if defined(CONFIG_LGE_SHOW_FB_BOOTLOGO)
-extern unsigned int lge_reset_flag;
-extern unsigned int lge_boot_flag;
-#define NUM_OF_BOOT_LOGO_IMAGES 36
-const char LG_bootlogo_progress[] = "/bootimages/progress_bar_";
 #endif
 
-#endif
-
-#if defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU)
-#define DISPLAY_INITLOGO_AT_INIT_PROCESS
-#endif
-
-#ifdef DISPLAY_INITLOGO_AT_INIT_PROCESS
-static int unset_bl_level = 0x7D;
-static int bl_updated = 0;
-#else
 static int unset_bl_level = 0;
 static int bl_updated = 1;
-#endif
 static int bl_level_old = 0;
 
 #endif
@@ -837,10 +812,9 @@ static void memset32_io(u32 __iomem *_ptr, u32 val, size_t count)
 static void msmfb_early_suspend(struct early_suspend *h)
 {
 	struct msm_fb_data_type *mfd = container_of(h, struct msm_fb_data_type,
-						    early_suspend);
-#if 1 /*                                                          */
+						early_suspend);
 	struct msm_fb_panel_data *pdata = NULL;
-#endif
+
 #if defined(CONFIG_FB_MSM_MDP303)
 	/*
 	* For MDP with overlay, set framebuffer with black pixels
@@ -936,7 +910,6 @@ void msm_fb_set_backlight(struct msm_fb_data_type *mfd, __u32 bkl_lvl)
 	struct msm_fb_panel_data *pdata;
 	__u32 temp = bkl_lvl;
 
-//	if (!mfd->panel_power_on || !bl_updated) {
 	if (!mfd->panel_power_on) {
 		unset_bl_level = bkl_lvl;
 		return;
@@ -984,17 +957,6 @@ static int msm_fb_blank_sub(int blank_mode, struct fb_info *info,
 			ret = pdata->on(mfd->pdev);
 			if (ret == 0) {
 				mfd->panel_power_on = TRUE;
-
-/* ToDo: possible conflict with android which doesn't expect sw refresher */
-/*
-	  if (!mfd->hw_refresh)
-	  {
-	    if ((ret = msm_fb_resume_sw_refresher(mfd)) != 0)
-	    {
-	      MSM_FB_INFO("msm_fb_blank_sub: msm_fb_resume_sw_refresher failed = %d!\n",ret);
-	    }
-	  }
-*/
 			}
 		}
 		break;
@@ -1220,33 +1182,6 @@ static __u32 msm_fb_line_length(__u32 fb_index, __u32 xres, int bpp)
 	else
 		return xres * bpp;
 }
-
-#if defined(CONFIG_LGE_SHOW_FB_BOOTLOGO)
-static void boot_logo_animate_work(struct work_struct *work);
-DECLARE_DELAYED_WORK(boot_logo_work_struct, boot_logo_animate_work);
-static void boot_logo_animate_work(struct work_struct *work)
-{
-	int frame_index = 0;
-	char image_name[255];
-	unsigned int update_image = 0;
-
-	for(frame_index = 0 ; frame_index < NUM_OF_BOOT_LOGO_IMAGES; frame_index++) {
-		/*
-		   frame 0 ~ frame 6 : all same images, no need to display
-		   frame 29 ~ frame 31 : all same images, no need to display
-		   This will reduce the size of ramdisk.img by approximately 40 KB
-		 */
-        update_image = 1;
-        snprintf(image_name, sizeof(image_name), "%s%5.5d.rle", LG_bootlogo_progress, frame_index);
-
-		bf_supported = mdp4_overlay_borderfill_supported();
-		if (update_image)
-			load_565rle_image(image_name, bf_supported);
-
-		msleep(83);
-	}
-}
-#endif
 
 static int msm_fb_register(struct msm_fb_data_type *mfd)
 {
@@ -1610,18 +1545,15 @@ static int msm_fb_register(struct msm_fb_data_type *mfd)
 #ifdef CONFIG_FB_MSM_LOGO
 #ifdef CONFIG_LGE_I_DISP_BOOTLOGO
 	if (mfd->panel_info.type == MIPI_VIDEO_PANEL) {
-#ifndef DISPLAY_INITLOGO_AT_INIT_PROCESS
-		msm_fb_blank_sub(FB_BLANK_UNBLANK, mfd->fbi, mfd->op_enable);
-		mdelay(100);
-		msm_fb_set_backlight(mfd, saved_bl_level);
-		if (!load_565rle_image(INIT_IMAGE_FILE, bf_supported)) ; /* Flip buffer */
-#endif
-	}
+		msm_fb_open(mfd->fbi, 0);
+
+		if (!load_565rle_image(INIT_IMAGE_FILE, bf_supported)); /* Flip buffer */
+
+		msm_fb_pan_display(var, fbi);
+		msm_fb_set_backlight(mfd, saved_bl_level);	}
 #else
-	/* Flip buffer */
-	if (!load_565rle_image(INIT_IMAGE_FILE, bf_supported))
-		;
-#endif	/*                          */
+	if (!load_565rle_image(INIT_IMAGE_FILE, bf_supported));	/* Flip buffer */
+#endif /*CONFIG_LGE_I_DISP_BOOTLOGO*/
 #endif
 
 	ret = 0;
@@ -1767,13 +1699,6 @@ static int msm_fb_register(struct msm_fb_data_type *mfd)
 	}
 #endif /* MSM_FB_ENABLE_DBGFS */
 
-#if defined(CONFIG_LGE_SHOW_FB_BOOTLOGO)
-	if (!lge_reset_flag || !lge_boot_flag) {
-		if (mfd->panel_info.type == MIPI_VIDEO_PANEL) {
-			schedule_delayed_work(&boot_logo_work_struct, msecs_to_jiffies(100));
-		}
-	}
-#endif
 	return ret;
 }
 
@@ -3087,7 +3012,6 @@ static int msmfb_overlay_play_wait(struct fb_info *info, unsigned long *argp)
 	return ret;
 }
 
-// QCT Performance
 static int msmfb_overlay_commit(struct fb_info *info, unsigned long *argp)
 {
 	int ret, ndx;
@@ -3526,7 +3450,6 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 	case MSMFB_OVERLAY_UNSET:
 		ret = msmfb_overlay_unset(info, argp);
 		break;
-	// QCT Performance
 	case MSMFB_OVERLAY_COMMIT:
 		down(&msm_fb_ioctl_ppp_sem);
 		ret = msmfb_overlay_commit(info, argp);
@@ -3906,10 +3829,14 @@ struct platform_device *msm_fb_add_device(struct platform_device *pdev)
 	 */
 	if (type == HDMI_PANEL || type == DTV_PANEL ||
 		type == TV_PANEL || type == WRITEBACK_PANEL) {
+#if 0 /*                                                                       */
 		if (hdmi_prim_display)
 			pdata->panel_info.fb_num = 2;
 		else
 			pdata->panel_info.fb_num = 1;
+#else
+		pdata->panel_info.fb_num = 2;
+#endif
 	}
 	else
 		pdata->panel_info.fb_num = MSM_FB_NUM;

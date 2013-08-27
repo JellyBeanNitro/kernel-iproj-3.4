@@ -63,16 +63,18 @@
 #endif
 
 #ifdef CONFIG_FB_MSM_HDMI_MSM_PANEL
-#define MSM_FB_EXT_BUF_SIZE  (1920 * 1080 * 2 * 1) /* 2 bpp x 1 page */
+#define MSM_FB_EXT_BUF_SIZE  \
+		(roundup((1920 * 1080 * 4), 4096) * 2) /* 4 bpp x 2 page */
 #elif defined(CONFIG_FB_MSM_TVOUT)
 #define MSM_FB_EXT_BUF_SIZE  (720 * 576 * 2 * 2) /* 2 bpp x 2 pages */
 #else
 #define MSM_FB_EXT_BUFT_SIZE	0
 #endif
 
+#define MSM_FB_EXT_BUF_CAPTION_SIZE (0)
 /* Note: must be multiple of 4096 */
-#define MSM_FB_SIZE roundup(MSM_FB_PRIM_BUF_SIZE + MSM_FB_EXT_BUF_SIZE+0xFD2000 + \
-				MSM_FB_DSUB_PMEM_ADDER, 4096)
+#define MSM_FB_SIZE roundup(MSM_FB_PRIM_BUF_SIZE + MSM_FB_EXT_BUF_SIZE + \
+				MSM_FB_EXT_BUF_CAPTION_SIZE + MSM_FB_DSUB_PMEM_ADDER, 4096)
 
 #define MSM_PMEM_SF_SIZE 0x4000000 /* 64 Mbytes */
 #define MSM_HDMI_PRIM_PMEM_SF_SIZE 0x4000000 /* 64 Mbytes */
@@ -202,7 +204,7 @@ static void mipi_config_gpio(int on)
 	}
 }
 
-#ifdef CONFIG_LGE_DISPLAY_MIPI_LGIT_VIDEO_HD_PT
+#ifdef CONFIG_LGE_DISPLAY_MIPI_LGIT_IJB_VIDEO_HD_PT
 extern void lm3530_lcd_backlight_set_level( int level);
 static int mipi_lgit_backlight_level(int level, int max, int min)
 {
@@ -250,18 +252,21 @@ static int mipi_dsi_panel_power(int on)
 		reg_8901_l2 = regulator_get(NULL, "8901_l2");
 		if (IS_ERR(reg_8901_l2)) {
 			reg_8901_l2 = NULL;
+			goto power_error;
 		}
 	}	
 	if (reg_8901_mvs == NULL) {
 		reg_8901_mvs = regulator_get(NULL, "8901_mvs0");
 		if (IS_ERR(reg_8901_mvs)) {
 			reg_8901_mvs = NULL;
+			goto power_error;
 		}
 	}
 	if (reg_8901_l3 == NULL) {
 		reg_8901_l3 = regulator_get(NULL, "8901_l3");
 		if (IS_ERR(reg_8901_l3)) {
 			reg_8901_l3 = NULL;
+			goto power_error;
 		}
 	}
 
@@ -318,10 +323,12 @@ static int mipi_dsi_panel_power(int on)
 
 	}
 	return 0;
+power_error:
+	return -1;
 }
 #endif
 
-#if defined(CONFIG_LGE_DISPLAY_MIPI_LGIT_VIDEO_HD_PT)
+#if defined(CONFIG_LGE_DISPLAY_MIPI_LGIT_IJB_VIDEO_HD_PT)
 void mipi_dsi_panel_power_off_shutdown(void)
 {
 	mipi_dsi_panel_power(0);
@@ -330,7 +337,7 @@ EXPORT_SYMBOL(mipi_dsi_panel_power_off_shutdown);
 #endif
 
 struct mipi_dsi_platform_data mipi_dsi_pdata = {
-    .vsync_gpio = MDP_VSYNC_GPIO,
+    //.vsync_gpio = MDP_VSYNC_GPIO,
 	.dsi_power_save   = mipi_dsi_panel_power,
 };
 
@@ -381,8 +388,7 @@ static struct platform_device *panel_devices[] __initdata = {
 
 #ifdef CONFIG_FB_MSM_MIPI_DSI
 
-/* jaeseong.gim@lge.com. 2011-01-16 */
-#ifdef CONFIG_LGE_DISPLAY_MIPI_LGIT_VIDEO_HD_PT
+#ifdef CONFIG_LGE_DISPLAY_MIPI_LGIT_IJB_VIDEO_HD_PT
 	&mipi_dsi_lgit_panel_device,
 #else
 	&mipi_dsi_sharp_panel_device,
@@ -870,15 +876,15 @@ static struct msm_bus_vectors mdp_720p_vectors[] = {
 	{
 		.src = MSM_BUS_MASTER_MDP_PORT0,
 		.dst = MSM_BUS_SLAVE_SMI,
-		.ab = 752855040,
-		.ib = 941068800,
+		.ab = 407937024,
+		.ib = 509921280,
 	},
 	/* Master and slaves can be from different fabrics */
 	{
 		.src = MSM_BUS_MASTER_MDP_PORT0,
 		.dst = MSM_BUS_SLAVE_EBI_CH0,
-		.ab = 752855040,
-		.ib = 941068800*2,
+		.ab = 407937024,
+		.ib = 509921280*2,
 	},
 };
 
@@ -887,15 +893,15 @@ static struct msm_bus_vectors mdp_1080p_vectors[] = {
 	{
 		.src = MSM_BUS_MASTER_MDP_PORT0,
 		.dst = MSM_BUS_SLAVE_SMI,
-		.ab = 752855040,
-		.ib = 941068800,
+		.ab = 544794624,
+		.ib = 680993280,
 	},
 	/* Master and slaves can be from different fabrics */
 	{
 		.src = MSM_BUS_MASTER_MDP_PORT0,
 		.dst = MSM_BUS_SLAVE_EBI_CH0,
-		.ab = 752855040,
-		.ib = 941068800*2,
+		.ab = 544794624,
+		.ib = 680993280*2,
 	},
 };
 

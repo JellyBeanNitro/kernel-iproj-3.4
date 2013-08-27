@@ -43,7 +43,7 @@
 #define GPIO_8M_CAM_VCM_EN					156
 #else
 #define GPIO_8M_CAM_VCM_EN					94
-#define GPIO_VT_OSC_EN						31
+#define GPIO_VT_OSC_EN						156
 #endif
 #define CAM_I2C_SLAVE_ADDR					0x1A>>1
 

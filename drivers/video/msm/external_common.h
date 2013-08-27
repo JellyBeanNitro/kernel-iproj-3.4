@@ -238,6 +238,9 @@ struct external_common_state_type {
 	uint32 audio_data_blocks[16];
 	int (*read_edid_block)(int block, uint8 *edid_buf);
 	int (*hpd_feature)(int on);
+#ifdef CONFIG_LGE_MHL_SII9244
+	boolean boot_completed;
+#endif
 #endif
 #ifdef CONFIG_LGE_MHL_SII9244	/*                                        */   
 	int cable_connected;

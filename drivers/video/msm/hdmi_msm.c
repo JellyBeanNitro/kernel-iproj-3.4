@@ -3642,13 +3642,16 @@ static int hdmi_msm_audio_off(void)
 		audio_pkt_ctrl = HDMI_INP_ND(0x0020);
 		audio_cfg = HDMI_INP_ND(0x01D0);
 		DEV_DBG("%d times :: HDMI AUDIO PACKET is %08x and "
-		"AUDIO CFG is %08x", i, audio_pkt_ctrl, audio_cfg);
+			"AUDIO CFG is %08x", i, audio_pkt_ctrl, audio_cfg);
+		switch_set_state(&external_common_state->sdev, 0);
 		msleep(100);
 		if (!i) {
 			DEV_ERR("%s:failed to set BIT[0] AUDIO PACKET"
-			"CONTROL or AUDIO CONFIGURATION REGISTER\n",
+				"CONTROL or AUDIO CONFIGURATION REGISTER\n",
 				__func__);
-			return -ETIMEDOUT;
+			hdmi_audio_packet_enable(0);
+			hdmi_audio_enable(0, 4);
+			msleep(100);
 		}
 	}
 	hdmi_msm_audio_info_setup(FALSE, 0, 0, 0, FALSE);
@@ -4796,11 +4799,10 @@ static int __init hdmi_msm_init(void)
  *	SII9244 Does not Support This
  **/
 #ifdef CONFIG_LGE_MHL_SII9244
-#ifdef CONFIG_LGE_DISPLAY_MIPI_LGIT_IJB_VIDEO_HD_PT
 			HDMI_VFRMT_1280x720p60_16_9;
-#else
-			HDMI_VFRMT_1920x1080p30_16_9;
-#endif
+
+	external_common_state->hpd_feature_on = 0;
+	external_common_state->boot_completed = 0;
 #else	/* QCT Original */
 			HDMI_VFRMT_1920x1080p60_16_9;
 #endif

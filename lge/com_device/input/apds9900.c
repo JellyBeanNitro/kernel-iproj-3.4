@@ -34,54 +34,14 @@
 #include <linux/gpio.h>
 #include <linux/interrupt.h>
 #include <apds9900.h>
-
-//For RCA-12_0657
-#if defined(CONFIG_MACH_LGE_120_BOARD) || defined(CONFIG_MACH_LGE_325_BOARD)
 #include <linux/wakelock.h>
-#endif
-#if defined(CONFIG_MACH_LGE_325_BOARD_LGU) || defined(CONFIG_MACH_LGE_325_BOARD_SKT) || defined(CONFIG_MACH_LGE_325_BOARD_DCM)|| defined(CONFIG_MACH_LGE_325_BOARD_VZW) || defined(CONFIG_MACH_LGE_120_BOARD) || defined (CONFIG_MACH_LGE_I_BOARD) || defined(CONFIG_MACH_LGE_I_BOARD_VZW) || defined(CONFIG_MACH_LGE_C1_BOARD_MPS)
-#define APDS9900_PROXIMITY_CAL
-#endif
-
-//                                                      
-#if defined(APDS9900_PROXIMITY_CAL)
-#include <linux/syscalls.h>
-#include <linux/fs.h>
-#include <linux/uaccess.h>
-
-#if defined(CONFIG_MACH_LGE_I_BOARD_VZW) || defined(CONFIG_MACH_LGE_C1_BOARD_MPS)
-#define PS_DEFAULT_CROSS_TALK 200
-#else
-#define PS_DEFAULT_CROSS_TALK 500
-#endif
-#endif
-//                                                    
-
-#if defined (CONFIG_MACH_LGE_I_BOARD_VZW)
-#include <board_lge.h>
-#endif
 
 #define APDS9900_DRV_NAME       "apds9900"
 #define DRIVER_VERSION          "1.0.4"
 
-#if defined(CONFIG_MACH_LGE_I_BOARD_LGU) || defined(CONFIG_MACH_LGE_120_BOARD)
-#define APDS990x_PS_DETECTION_THRESHOLD		800//850//820 //600
-#define APDS990x_PS_HSYTERESIS_THRESHOLD	700//770//720 //500
-
-#elif defined(CONFIG_MACH_LGE_I_BOARD_VZW) || defined(CONFIG_MACH_LGE_C1_BOARD_MPS)
-#define APDS990x_PS_DETECTION_THRESHOLD		500
-#define APDS990x_PS_HSYTERESIS_THRESHOLD	400
-
-#else
-//                                                                                           
-//#define APDS9900_USE_MUTEX  
-//                                                                               
-#define APDS990x_PS_DETECTION_THRESHOLD		850//600
-#define APDS990x_PS_HSYTERESIS_THRESHOLD	750//500
-#endif
-
-static unsigned long apds990x_ps_detection_threshold = APDS990x_PS_DETECTION_THRESHOLD;
-static unsigned long apds990x_ps_hsyteresis_threshold = APDS990x_PS_HSYTERESIS_THRESHOLD;
+#define APDS9900_USE_MUTEX  
+#define APDS990x_PS_DETECTION_THRESHOLD		600
+#define APDS990x_PS_HSYTERESIS_THRESHOLD	500
 
 /* Change History 
  *
@@ -186,20 +146,9 @@ struct apds9900_data
 	unsigned int als_gain;			/* needed for Lux calculation */
 	unsigned int als_poll_delay;		/* needed for light sensor polling : micro-second (us) */
 	unsigned int als_atime;			/* storage for als integratiion time */
-//                                                      
-#if defined(APDS9900_PROXIMITY_CAL)
-	int cross_talk;
-	bool read_ps_cal_data;
-	bool ps_cal_result;
-#endif	
-//                                                    
-	
-
 };
-//For RCA-12_0657
-#if defined(CONFIG_MACH_LGE_120_BOARD) || defined(CONFIG_MACH_LGE_325_BOARD)
+
 struct wake_lock proxi_irq_wake_lock;
-#endif 
 
 #define ABS_LIGHT       0x29
 
@@ -222,12 +171,6 @@ static int apds9900_resume(struct device *device);
 static int apds9900_check_reliablility(struct i2c_client *client );
 static int apds9900_device_parameter_init(struct i2c_client *client);
 static int apds9900_device_init(struct i2c_client *client);
-//                                                      
-#if defined(APDS9900_PROXIMITY_CAL)
-static int apds9900_read_crosstalk_data_fs(void);
-static void apds9900_Set_PS_Threshold_Adding_Cross_talk(struct i2c_client *client, int cal_data);
-#endif
-//                                                    
 
 /*
  * DEBUG MASK
@@ -258,7 +201,7 @@ enum
 		APDS9900_DEBUG_INTR_INFO	= 1U << 5,
 };
 
-static unsigned int apds9900_debug_mask = APDS9900_DEBUG_ERROR_CHECK|APDS9900_DEBUG_DEV_STATUS;
+static unsigned int apds9900_debug_mask = APDS9900_DEBUG_ERROR_CHECK;
 
 module_param_named(debug_mask, apds9900_debug_mask, int,
                 S_IRUGO | S_IWUSR );
@@ -292,10 +235,7 @@ static void apds9900_change_ps_threshold(struct i2c_client *client)
 	int irdata=0;
 	int ret = 0;
     struct apds9900_data *data = i2c_get_clientdata(client);
-//For RCA-12_0657
-#if defined(CONFIG_MACH_LGE_120_BOARD) || defined(CONFIG_MACH_LGE_325_BOARD)
 	wake_lock(&proxi_irq_wake_lock);
-#endif
    
     data->ps_data =	i2c_smbus_read_word_data(client, CMD_WORD|APDS9900_PDATAL_REG);
 	if (data->ps_data < 0) {
@@ -337,8 +277,7 @@ static void apds9900_change_ps_threshold(struct i2c_client *client)
 		data->pilt = data->ps_hysteresis_threshold;
 		data->piht = 1023;
 		
-#ifdef APDS9900_USE_MUTEX
-#else
+#ifndef APDS9900_USE_MUTEX
 		irq_set_irq_wake(data->irq, 1);
 #endif
 		if (apds9900_debug_mask & APDS9900_DEBUG_FUNC_TRACE)
@@ -370,8 +309,7 @@ static void apds9900_change_ps_threshold(struct i2c_client *client)
 		data->pilt = 0;
 		data->piht = data->ps_threshold;
 
-#ifdef APDS9900_USE_MUTEX
-#else
+#ifndef APDS9900_USE_MUTEX
 		irq_set_irq_wake(data->irq, 0);
 #endif
 		if (apds9900_debug_mask & APDS9900_DEBUG_FUNC_TRACE)
@@ -385,12 +323,6 @@ static void apds9900_change_ps_threshold(struct i2c_client *client)
 
         input_report_abs(data->input_dev_proxi, ABS_DISTANCE, 10); // fix to 10cm when far
 		input_sync(data->input_dev_proxi);
-
-//		i2c_smbus_write_word_data(client, CMD_WORD|APDS990x_PILTL_REG, 0);
-//		i2c_smbus_write_word_data(client, CMD_WORD|APDS990x_PIHTL_REG, data->ps_threshold);
-
-//		data->pilt = 0;
-//		data->piht = data->ps_threshold;
 
 		/*Keep the threshold NEAR condition to prevent the frequent Interrupt under strong ambient light*/
 		ret = i2c_smbus_write_word_data(client, CMD_WORD|APDS9900_PILTL_REG, data->ps_hysteresis_threshold);
@@ -411,8 +343,7 @@ static void apds9900_change_ps_threshold(struct i2c_client *client)
 		data->pilt = data->ps_hysteresis_threshold;
 		data->piht = 1023;
 		
-#ifdef APDS9900_USE_MUTEX
-#else
+#ifndef APDS9900_USE_MUTEX
 		irq_set_irq_wake(data->irq, 0);
 #endif
 		if (apds9900_debug_mask & APDS9900_DEBUG_FUNC_TRACE)
@@ -454,10 +385,7 @@ static void apds9900_change_ps_threshold(struct i2c_client *client)
         	DEBUG_MSG("### near-to-far detected\n");
 
 	}
-//For RCA-12_0657
-#if defined(CONFIG_MACH_LGE_120_BOARD) || defined(CONFIG_MACH_LGE_325_BOARD)
 	wake_lock_timeout(&proxi_irq_wake_lock, msecs_to_jiffies(2000)); //2sec wakelock
-#endif
 }
 
 static void apds9900_change_als_threshold(struct i2c_client *client)
@@ -548,8 +476,7 @@ static void apds9900_change_als_threshold(struct i2c_client *client)
 
 static void apds9900_reschedule_work(struct apds9900_data *data, unsigned long delay)
 {
-#ifdef APDS9900_USE_MUTEX
-#else
+#ifndef APDS9900_USE_MUTEX
     unsigned long flags = 0;
     
     spin_lock_irqsave(&data->update_lock, flags);
@@ -565,8 +492,7 @@ static void apds9900_reschedule_work(struct apds9900_data *data, unsigned long d
 #else
     schedule_delayed_work(&data->poswork, delay);
 #endif    
-#ifdef APDS9900_USE_MUTEX
-#else
+#ifndef APDS9900_USE_MUTEX
     spin_unlock_irqrestore(&data->update_lock, flags);
 #endif
 }
@@ -805,7 +731,7 @@ static void apds9900_event_work(struct work_struct *work)
 #else
 		return;
 #endif
-	}
+	}	
 #ifdef APDS9900_USE_MUTEX
 err_i2c_fail:
 	mutex_unlock(&data->lock);
@@ -1012,7 +938,6 @@ static int apds9900_set_enable(struct i2c_client *client, int enable)
     int ret = 0;
     int retry_count = 0;
 
-    printk("%s value : %d\n", __FUNCTION__, enable);
 	if(apds9900_debug_mask & APDS9900_DEBUG_GEN_INFO)
 		DEBUG_MSG("### apds9900_set_enable papds9900_data->enable=%d, data->enable=%d, enable=%d\n", papds9900_data->enable, data->enable, enable);
 
@@ -1028,28 +953,17 @@ static int apds9900_set_enable(struct i2c_client *client, int enable)
                 else
                     break;
             }
-#if defined(CONFIG_MACH_LGE_120_BOARD) 
 			if(((data->enable &0x20)==0)&&((enable &0x20)==0x20))
-#else
-			if(((data->enable &0x20)==0)&&((enable &0x20)==1))
-#endif
 			{
                 apds9900_set_pilt(client, 1023);	// to force first Near-to-Far interrupt
                 apds9900_set_piht(client, 0);
                 papds9900_data->ps_detection = 1;			// we are forcing Near-to-Far interrupt, so this is defaulted to 1
-//                                                      
-#if defined(APDS9900_PROXIMITY_CAL)
-                apds9900_Set_PS_Threshold_Adding_Cross_talk(client, data->cross_talk);				
-#else
-                papds9900_data->ps_threshold = apds990x_ps_detection_threshold ;
-                papds9900_data->ps_hysteresis_threshold = apds990x_ps_hsyteresis_threshold ;
+                papds9900_data->ps_threshold = APDS990x_PS_DETECTION_THRESHOLD;
+                papds9900_data->ps_hysteresis_threshold = APDS990x_PS_HSYTERESIS_THRESHOLD;
 				apds9900_change_ps_threshold(client);
-#endif				
-//                                                        
 				if(apds9900_debug_mask & APDS9900_DEBUG_GEN_INFO)
 					DEBUG_MSG("### apds9900_set_enable initialize ps_threshold\n");
 			}
-            		printk("%s Debug point 2 value : %d\n", __FUNCTION__, enable);							
         }
 		ret = i2c_smbus_write_byte_data(client, CMD_BYTE|APDS9900_ENABLE_REG, enable);
 		if (ret < 0) {
@@ -1064,260 +978,10 @@ static int apds9900_set_enable(struct i2c_client *client, int enable)
 
     return ret;
 }
-//                                                     
-#if defined(APDS9900_PROXIMITY_CAL)
-void apds9900_swap(int *x, int *y)
-{
-     int temp = *x;
-     *x = *y;
-     *y = temp;
-}
-
- static int apds9900_backup_crosstalk_data_fs(unsigned int val)
-{
-	int fd;
-	int ret = 0;
-	char buf[50];
-	mm_segment_t old_fs = get_fs();
-
-	memset(buf, 0, sizeof(buf));
-	sprintf(buf, "%d", val);
-
-	printk("%s Enter\n", __FUNCTION__ );
-	printk("%s\n", buf);
-
-	set_fs(KERNEL_DS);
-	fd = sys_open("/mpt/prox_calibration.dat",O_WRONLY|O_CREAT, 0664);
-
-	if(fd >=0)
-	{
-		sys_write(fd, buf, sizeof(buf));
-		sys_close(fd);
-		set_fs(old_fs);
-	}
-	else
-	{
-		ret++;
-		sys_close(fd);
-		set_fs(old_fs);
-		return ret	;
-	}
-
-	return ret;
-}
-static int apds9900_read_crosstalk_data_fs(void)
-{
-	int fd;
-	int ret = 0;
-	char read_buf[50];
-	mm_segment_t old_fs = get_fs();
-	  
-	printk("%s Enter\n", __FUNCTION__);
-	memset(read_buf, 0, sizeof(read_buf));
-	set_fs(KERNEL_DS);
-
-	fd = sys_open("/mpt/prox_calibration.dat",O_RDONLY, 0);
-	if(fd >=0)
-	{
-		printk("%s Success read Prox Cross-talk from FS\n", __FUNCTION__);
-		sys_read(fd, read_buf, sizeof(read_buf));
-		sys_close(fd);
-		set_fs(old_fs);
-	}
-	else
-	{
-		printk("%s Fail read Prox Cross-talk FS\n", __FUNCTION__);
-		printk("%s Return error code : %d\n", __FUNCTION__, fd);
-		ret = -1;
-		sys_close(fd);
-		set_fs(old_fs);
-		return ret;	  
-	} 	  
-
-	return (simple_strtol(read_buf, NULL, 10));
-
-}
-
-/* Cross-talk Calibration???? ??d?? cross-talk; threshold?? ??????.*/
-static void apds9900_Set_PS_Threshold_Adding_Cross_talk(struct i2c_client *client, int cal_data)
-{
-	struct apds9900_data *data = i2c_get_clientdata(client);
-#if defined(CONFIG_MACH_LGE_120_BOARD) 
-	if (cal_data>720)
-		cal_data = 720;
-	if (cal_data<0)
-		cal_data = 0;
-	
-	data->cross_talk = cal_data;
-	data->ps_threshold = 300 + cal_data;
-	data->ps_hysteresis_threshold = data->ps_threshold - 100;
-#else
-	if (cal_data>770)
-		cal_data = 770;
-	if (cal_data<0)
-		cal_data = 0;
-	
-	data->cross_talk = cal_data;
-	data->ps_threshold = 250 + cal_data;
-	data->ps_hysteresis_threshold = data->ps_threshold - 80;
-#endif
-}
-
-/* Production?? All Auto Test?ÿ? cross talk; ??d?ϴ? ?Լ?. Cross talk ??; phone?? ?????Ͽ??? ??.. */
-static int apds9900_Run_Cross_talk_Calibration(struct i2c_client *client)
-{
-	struct apds9900_data *data = i2c_get_clientdata(client);
-	unsigned int sum_of_pdata = 0,temp_pdata[20];
-	unsigned int ret=0,i=0,j=0,ArySize = 20,cal_check_flag = 0;
-	unsigned int old_enable = 0;
-
-	printk("%s Enter \n", __FUNCTION__);
-
-#if defined(CONFIG_MACH_LGE_120_BOARD) 
-	old_enable = data->enable; /*Back-up status*/
-#else
-	old_enable = 0x3f; /*Back-up status*/
-#endif
-
-RE_CALIBRATION:
-	sum_of_pdata =0;
-	apds9900_set_enable(client, (data->enable|0x0D));/* Enable PS and Wait */
-	
-	msleep(50);
-
-	for(i =0;i<20;i++)	{
-		temp_pdata[i] = i2c_smbus_read_word_data(client, CMD_WORD|APDS9900_PDATAL_REG);
-		mdelay(6);
-	}
-
-	// pdata sorting
-	for(i=0; i<ArySize-1; i++)
-		for(j=i+1; j<ArySize; j++)
-			if(temp_pdata[i] > temp_pdata[j])
-				apds9900_swap(temp_pdata+i, temp_pdata+j);
-
-	for (i = 5;i<15;i++)
-		sum_of_pdata = sum_of_pdata + temp_pdata[i];
-	
-	data->cross_talk = sum_of_pdata/10;
-#if defined(CONFIG_MACH_LGE_120_BOARD) 
-	if (data->cross_talk>720)
-#else
-	if (data->cross_talk>770)
-#endif
-	{
-		if (cal_check_flag == 0)
-		{
-			cal_check_flag = 1;
-			goto RE_CALIBRATION;
-		}
-		else
-		{
-			apds9900_set_enable(client,0x00);	// disable clock. 
-			apds9900_set_enable(client,old_enable); /* restore status */
-			return -1;
-		}
-	}
-#if defined(CONFIG_MACH_LGE_120_BOARD) 
-	data->ps_threshold = 300 + data->cross_talk;
-	data->ps_hysteresis_threshold = data->ps_threshold - 100;
-#else
-	data->ps_threshold = 250 + data->cross_talk;
-	data->ps_hysteresis_threshold = data->ps_threshold - 80;
-#endif
-
-	ret = apds9900_backup_crosstalk_data_fs(data->cross_talk);
-
-	printk("%s threshold : %d\n", __FUNCTION__, data->ps_threshold);
-	printk("%s Hysteresis_threshold : %d\n",__FUNCTION__, data->ps_hysteresis_threshold);
-
-	apds9900_set_enable(client,0x00);	// disable clock. 
-	apds9900_set_enable(client,old_enable); /* restore status */
-
-	printk("%s Leave\n", __FUNCTION__);
-	return data->cross_talk; //Save the cross-talk to the non-volitile memory in the phone.  
-}
-#endif
 
 /*
  * SysFS support
  */
-#if defined(APDS9900_PROXIMITY_CAL)
- static ssize_t apds9900_show_run_calibration(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	struct i2c_client *client = to_i2c_client(dev);
-	struct apds9900_data *data = i2c_get_clientdata(client);
-
-	return sprintf(buf, "%x\n", data->ps_cal_result);
-}
-
-static ssize_t apds9900_store_run_calibration(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t count)
-{
-	struct i2c_client *client = to_i2c_client(dev);
-	struct apds9900_data *data = i2c_get_clientdata(client);
-
-	int ret;
-
-	ret = apds9900_Run_Cross_talk_Calibration(client);
-	if(ret < 0)
-	{
-		printk("%s Fail error :  %d\n", __FUNCTION__, ret);
-		data->ps_cal_result = 0;
-	}
-	else
-	{
-		printk("%s Succes cross-talk :  %d\n", __FUNCTION__, ret);
-		data->ps_cal_result = 1;
-	}
-
-	return count;
-}
-static DEVICE_ATTR(run_calibration,  S_IWUSR | S_IRUGO|S_IWGRP |S_IRGRP |S_IROTH/*|S_IWOTH*/,
-		   apds9900_show_run_calibration, apds9900_store_run_calibration);
-
- static ssize_t apds9900_show_crosstalk_data(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	int ret = 0;
-	
-	ret = apds9900_read_crosstalk_data_fs();
-	if(ret<0)
-		return sprintf(buf, "Read fail\n");
-	
-	return sprintf(buf, "%d\n", ret);
-}
-
-// Back-up new cross-talk and restore cross-talk value.
-static ssize_t apds9900_store_crosstalk_data(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t count)
-{
-	struct i2c_client *client = to_i2c_client(dev);
-	struct apds9900_data *data = i2c_get_clientdata(client);
-	int ret = 0;
-	unsigned long val = simple_strtoul(buf, NULL, 10);
-
-
-	printk("%s Enter\n", __FUNCTION__ );
-	//back-up
-	ret = apds9900_backup_crosstalk_data_fs(val);
-	if(ret != 0)
-		return printk("File open fail %d\n", ret);	
-
-	//restore
-	data->cross_talk = val;
-
-	printk("Saved cross_talk val : %d\n", (int)val);
-
-	
-	return count;
-}
-
-static DEVICE_ATTR(prox_cal_data,  S_IWUSR | S_IRUGO|S_IWGRP |S_IRGRP |S_IROTH/*|S_IWOTH*/,
-		   apds9900_show_crosstalk_data, apds9900_store_crosstalk_data);
-#endif
-//                                                    
 
 static ssize_t apds9900_store_command(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
@@ -1714,8 +1378,8 @@ static ssize_t apds9900_show_pdata(struct device *dev, struct device_attribute *
 }
 static DEVICE_ATTR(pdata, S_IRUGO | S_IRGRP | S_IROTH, apds9900_show_pdata, NULL);
 
-/*                            
-                                           
+/* kwangdo.yi@lge.com 10.08.31
+ * added to inform LgHiddenMenu of Near/Far
  */
 static ssize_t apds9900_show_prox(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -1746,7 +1410,6 @@ static ssize_t apds9900_store_enable1(struct device *dev, struct device_attribut
 
     sscanf(buf, "%d\n", &value);
 
-    printk("%s value : %d", __FUNCTION__, value);
     if (value == 0)
         ret = apds9900_set_enable(client, 0); 
     else if (value ==1)
@@ -1786,32 +1449,14 @@ static ssize_t apds9900_store_proximity_enable(struct device *dev, struct device
     
     unsigned long value = simple_strtoul(buf, NULL, 10);
 
-//	if(apds9900_debug_mask & APDS9900_DEBUG_GEN_INFO)
+	if(apds9900_debug_mask & APDS9900_DEBUG_GEN_INFO)
 	    DEBUG_MSG(KERN_INFO "### apds9900_store_proximity_enable value=%d\n", (int)value);
 
 
     if (value == 0)
-        ret = apds9900_set_enable(client, (data->enable & 0x10)?0x1b:0); 
+        ret = apds9900_set_enable(client, (data->enable & 0x10)?0x1f:0); 
     else if (value ==1)
     {
-//                                                          
-#if defined(APDS9900_PROXIMITY_CAL)
-        if(!data->read_ps_cal_data)
-        {
-	    data->cross_talk = apds9900_read_crosstalk_data_fs();
-#if defined(CONFIG_MACH_LGE_120_BOARD) 
-	    if(data->cross_talk <= 0 || data->cross_talk > 720)
-#else
-	    if(data->cross_talk <= 0 || data->cross_talk>770)
-#endif
-	        data->cross_talk = PS_DEFAULT_CROSS_TALK;
-
- 	    printk("%s Cross_talk : %d\n", __FUNCTION__, data->cross_talk);
-	    apds9900_Set_PS_Threshold_Adding_Cross_talk(client, data->cross_talk); 	 
-	    data->read_ps_cal_data++;
-        }
-#endif
-//                                                    
         ret = apds9900_set_enable(client, 0x2F|data->enable); 
     }
     else
@@ -1849,13 +1494,13 @@ static ssize_t apds9900_store_als_enable(struct device *dev, struct device_attri
     
     unsigned long value = simple_strtoul(buf, NULL, 10);
 
-//	if(apds9900_debug_mask & APDS9900_DEBUG_GEN_INFO)
+	if(apds9900_debug_mask & APDS9900_DEBUG_GEN_INFO)
 	    DEBUG_MSG(KERN_INFO "### apds9900_store_als_enable value=%d\n", (int)value);
 
     if (value == 0)
         ret = apds9900_set_enable(client, (data->enable & 0x20)?0x2f:0); 
     else if (value ==1)
-        ret = apds9900_set_enable(client, 0x1B|data->enable); 
+        ret = apds9900_set_enable(client, 0x1F|data->enable); 
     else
 	{
 		if(apds9900_debug_mask & APDS9900_DEBUG_ERROR_CHECK)
@@ -1912,104 +1557,6 @@ static ssize_t apds9900_show_proximity(struct device *dev, struct device_attribu
 }
 static DEVICE_ATTR(proximity, S_IRUGO | S_IRGRP | S_IROTH, apds9900_show_proximity, NULL);
 
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-static ssize_t apds9900_show_proxthreshold_value(struct device *dev, struct device_attribute *attr, char *buf)
-{
-#if defined(APDS9900_PROXIMITY_CAL)
-    struct i2c_client *client = to_i2c_client(dev);
-    struct apds9900_data *data = i2c_get_clientdata(client);
-	
-
-    int val = (int) data->ps_threshold;
-#else
-  int val = (int) apds990x_ps_detection_threshold;
-#endif
-    return sprintf(buf, "%d\n", val );
-}
-
-static ssize_t apds9900_store_proxthreshold_value(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
-{
-	struct apds9900_data *data = dev_get_drvdata(dev);
-	struct i2c_client *client = data->client;
-
- 
-    int ret = 0;
-    
-    unsigned long value = simple_strtoul(buf, NULL, 10);
-
-    apds990x_ps_detection_threshold  = value;
-    
-	  if(apds9900_debug_mask & APDS9900_DEBUG_GEN_INFO)
-	    DEBUG_MSG(KERN_INFO "### apds9900_store_threshold_value value=%d\n", (int)value);
-
-
-    ret = apds9900_set_enable(client, 0); 
-    
-    msleep(50);
-    
-    ret = apds9900_set_enable(client, 0x2F); 
-   
-
-    if (ret < 0)
-        return ret;
-
-    return count;
-}
-
-
-
-
-static ssize_t apds9900_show_proxhysteresis_value(struct device *dev, struct device_attribute *attr, char *buf)
-{
-#if defined(APDS9900_PROXIMITY_CAL)
-    struct i2c_client *client = to_i2c_client(dev);
-    struct apds9900_data *data = i2c_get_clientdata(client);
-
-    int val = (int) data->ps_hysteresis_threshold;
-#else
-  int val = (int) apds990x_ps_hsyteresis_threshold ;
-#endif
-    return sprintf(buf, "%d\n", val );
-}
-
-static ssize_t apds9900_store_proxhysteresis_value(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
-{
-	struct apds9900_data *data = dev_get_drvdata(dev);
-	struct i2c_client *client = data->client;
-
- 
-    int ret = 0;
-    
-    unsigned long value = simple_strtoul(buf, NULL, 10);
-
-    apds990x_ps_hsyteresis_threshold   = value;
-    
-	  if(apds9900_debug_mask & APDS9900_DEBUG_GEN_INFO)
-	    DEBUG_MSG(KERN_INFO "### apds9900_store_threshold_value value=%d\n", (int)value);
-
-
-    ret = apds9900_set_enable(client, 0); 
-    
-    msleep(50);
-    
-    ret = apds9900_set_enable(client, 0x2F); 
-   
-
-    if (ret < 0)
-        return ret;
-
-    return count;
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-static DEVICE_ATTR(prox_threshold, S_IWUSR | S_IRUGO | S_IRGRP | S_IROTH , apds9900_show_proxthreshold_value, apds9900_store_proxthreshold_value);
-
-static DEVICE_ATTR(prox_hysteresis, S_IWUSR | S_IRUGO | S_IRGRP | S_IROTH , apds9900_show_proxhysteresis_value, apds9900_store_proxhysteresis_value);
-
-
 static struct attribute *apds9900_attributes[] =
 {
     &dev_attr_command.attr,
@@ -2035,16 +1582,8 @@ static struct attribute *apds9900_attributes[] =
     &dev_attr_enable1.attr,
     &dev_attr_proximity.attr,
     &dev_attr_als.attr,
-    &dev_attr_prox_threshold.attr,
-    &dev_attr_prox_hysteresis.attr,
     &dev_attr_proximity_enable.attr,
     &dev_attr_light_enable.attr,
-#if defined(APDS9900_PROXIMITY_CAL)
-//                                                      
-    &dev_attr_run_calibration.attr,
-    &dev_attr_prox_cal_data.attr,
-//                                                    
-#endif
     NULL
 };
 
@@ -2056,18 +1595,9 @@ static const struct attribute_group apds9900_attr_group =
 /*
  * Initialization function
  */
-#if defined(CONFIG_MACH_LGE_I_BOARD_VZW)
-//seungkwan.jung
-extern int lge_bd_rev;
-#endif
-
 static int apds9900_device_parameter_init(struct i2c_client *client)
 {
 	struct apds9900_platform_data* pdata = client->dev.platform_data;
-//                                              
-#if defined(APDS9900_PROXIMITY_CAL)
-	struct apds9900_data *data = i2c_get_clientdata(client);
-#endif
 	
     if(apds9900_debug_mask & APDS9900_DEBUG_DEV_STATUS)
 	    DEBUG_MSG("apds9900 device paremeter (re)init .\n");
@@ -2077,40 +1607,19 @@ static int apds9900_device_parameter_init(struct i2c_client *client)
     apds9900_set_config(client, 0x00);  /* unless they need to use wait time more than > 700ms */
 
     /* ALS tuning */
-#if defined(CONFIG_MACH_LGE_120_BOARD) 
     apds9900_set_atime(client, pdata->atime);   /* ALS = 100ms , MAX count = 37888 */
-#else
-    apds9900_set_atime(client, 0xDE);   /* ALS = 100ms , MAX count = 37888 */
-#endif
 
     /* proximity tuning */
     apds9900_set_ptime(client, 0xFF);   /* recommended value. don't change it unless there's proper reason PTIME = 2.72ms, MAX count = 1023 */
-#if defined(CONFIG_MACH_LGE_I_BOARD_VZW)
-	if(lge_bd_rev ==LGE_REV_B){
-		pdata->ppcount =4;
-	}
-#endif
-
     apds9900_set_ppcount(client, pdata->ppcount);  /* use 8-pulse should be enough for evaluation */
 
     /* interrupt tuning */
-	//apds9900_set_pers(client, 0x33);	// 3 consecutive Interrupt persistence
-#if defined(CONFIG_MACH_LGE_120_BOARD)
-	apds9900_set_pers(client, 0x24);	//0x14// 5 consecutive Interrupt persistence
-#else
-	apds9900_set_pers(client, 0x14);	// 5 consecutive Interrupt persistence
-#endif
-
+	apds9900_set_pers(client, 0x14);	// 1 consecutive Interrupt persistence
 	apds9900_set_pilt(client, 1023);	// to force first Near-to-Far interrupt
 	apds9900_set_piht(client, 0);
 	papds9900_data->ps_detection = 1;			// we are forcing Near-to-Far interrupt, so this is defaulted to 1
-//                                              
-#if defined(APDS9900_PROXIMITY_CAL)
-	apds9900_Set_PS_Threshold_Adding_Cross_talk(client, data->cross_talk);
-#else
-	papds9900_data->ps_threshold = apds990x_ps_detection_threshold ;
-	papds9900_data->ps_hysteresis_threshold = apds990x_ps_hsyteresis_threshold ;
-#endif	
+	papds9900_data->ps_threshold = APDS990x_PS_DETECTION_THRESHOLD;
+	papds9900_data->ps_hysteresis_threshold = APDS990x_PS_HSYTERESIS_THRESHOLD;
 	// sensor is in disabled mode but all the configurations are preset
     return 0;
 }
@@ -2121,8 +1630,8 @@ static int apds9900_device_init(struct i2c_client *client)
     
     apds9900_device_parameter_init(client);
     
-  /*                              
-                                                                          
+  /* kwangdo.yi@lge.com 2010.08.31
+     * leave out to UI scenario, turn apds on/off from app, telephony etc.
      */
 	if(apds9900_debug_mask & APDS9900_DEBUG_DEV_STATUS)
 	    DEBUG_MSG("apds9900 device (re)init finished.\n");
@@ -2130,8 +1639,8 @@ static int apds9900_device_init(struct i2c_client *client)
     return 0;
 }
 
-/*                              
-                                      
+/* kwangdo.yi@lge.com 10.09.17 S
+ * add to support ioctl to sensor HAL 
  */
 
 static int apds_open(struct inode *inode, struct file *file)
@@ -2197,21 +1706,13 @@ static int __devinit apds9900_probe(struct i2c_client *client,
 #endif
     papds9900_data->enable = 0;	/* default mode is standard */
     papds9900_data->ps_detection = 0; /* default to no detection == far */    
-    papds9900_data->ps_threshold = 0;
-    papds9900_data->ps_hysteresis_threshold = 0;
-
-	#if defined(APDS9900_PROXIMITY_CAL)
-    papds9900_data->cross_talk=PS_DEFAULT_CROSS_TALK;
-#endif	
+	papds9900_data->ps_threshold = 0;
+	papds9900_data->ps_hysteresis_threshold = 0;
 	
     dev_info(&client->dev, "enable = %s\n", papds9900_data->enable ? "1" : "0");
 
     pdata->power(1);
-#if defined(CONFIG_MACH_LGE_325_BOARD_LGU) || defined(CONFIG_MACH_LGE_325_BOARD_SKT) || defined(CONFIG_MACH_LGE_325_BOARD_DCM) 
-	  mdelay(10);
-#else
 	mdelay(20);
-#endif
 
     err = sysfs_create_group(&client->dev.kobj, &apds9900_attr_group);
     if (err)
@@ -2291,15 +1792,10 @@ static int __devinit apds9900_probe(struct i2c_client *client,
     {
         printk("### apds_probe: apds_device misc_register failed\n");
     }
-//For RCA-12_0657
-#if defined(CONFIG_MACH_LGE_120_BOARD) || defined(CONFIG_MACH_LGE_325_BOARD)
-	wake_lock_init(&proxi_irq_wake_lock, WAKE_LOCK_SUSPEND, "proxi_irq");	//hyunjee.yoon
-#endif
+	wake_lock_init(&proxi_irq_wake_lock, WAKE_LOCK_SUSPEND, "proxi_irq");
+
 	err = device_create_file(&papds9900_data->input_dev_proxi->dev, &dev_attr_proximity_enable);
 	err = device_create_file(&papds9900_data->input_dev_proxi->dev, &dev_attr_proximity);
-	err = device_create_file(&papds9900_data->input_dev_proxi->dev, &dev_attr_prox_threshold);
-	err = device_create_file(&papds9900_data->input_dev_proxi->dev, &dev_attr_prox_hysteresis);
-	
 	
 	if (err) {
 		printk("### apds_probe: Proximity device_create_file failed\n");
@@ -2316,7 +1812,7 @@ static int __devinit apds9900_probe(struct i2c_client *client,
 	
 	err = device_create_file(&papds9900_data->input_dev_light->dev, &dev_attr_light_enable);
 	err = device_create_file(&papds9900_data->input_dev_light->dev, &dev_attr_als);
-			
+		
 	if (err) {
 		printk("### apds_probe: light device_create_file failed\n");
 		goto  exit_kfree;
@@ -2358,8 +1854,6 @@ static int __devexit apds9900_remove(struct i2c_client *client)
 	device_remove_file(&papds9900_data->input_dev_proxi->dev, &dev_attr_proximity);
 	device_remove_file(&papds9900_data->input_dev_light->dev, &dev_attr_light_enable);
 	device_remove_file(&papds9900_data->input_dev_light->dev, &dev_attr_als);
-	device_remove_file(&papds9900_data->input_dev_light->dev, &dev_attr_prox_threshold);
-	device_remove_file(&papds9900_data->input_dev_light->dev, &dev_attr_prox_hysteresis);
 	
 	input_unregister_device(papds9900_data->input_dev_proxi);
 	input_unregister_device(papds9900_data->input_dev_light);
@@ -2395,14 +1889,10 @@ static int apds9900_suspend(struct device *device)
 {
 	struct apds9900_platform_data* pdata = (struct apds9900_platform_data* )device->platform_data;
 
-	// suspend /resume logging test	
-	printk(KERN_INFO"%s is stating ... \n", __func__);
-
 	if(apds9900_debug_mask & APDS9900_DEBUG_GEN_INFO)
 		DEBUG_MSG("### apds9900_suspend, papds9900_data->enable=%d\n", papds9900_data->enable);
 
-#ifdef APDS9900_USE_MUTEX
-#else
+#ifndef APDS9900_USE_MUTEX
 	irq_set_irq_wake(papds9900_data->client->irq, 0);
 	disable_irq(papds9900_data->client->irq);
 #endif
@@ -2419,12 +1909,7 @@ static int apds9900_suspend(struct device *device)
 		pdata->power(0);
 	}
 
-	
-	// suspend /resume logging test	
-	printk(KERN_INFO"%s is exting ... \n", __func__);
-
-
-#if 0 //def APDS9900_USE_MUTEX //Disable for unnecessary code
+#ifdef APDS9900_USE_MUTEX
 	mutex_lock(&papds9900_data->lock);
 #endif
 	return 0;
@@ -2433,11 +1918,9 @@ static int apds9900_suspend(struct device *device)
 static int apds9900_resume(struct device *device)
 {
 	struct apds9900_platform_data* pdata = (struct apds9900_platform_data* )device->platform_data;
-#if 0 //def APDS9900_USE_MUTEX //Disalbe for unnecessary code
+#ifdef APDS9900_USE_MUTEX
 	mutex_unlock(&papds9900_data->lock);
 #endif
-	// suspend /resume logging test	
-	printk(KERN_INFO"%s is stating ... \n", __func__);
 
 	if(apds9900_debug_mask & APDS9900_DEBUG_GEN_INFO)
 		DEBUG_MSG("### apds9900_resume, papds9900_data->enable=%d, enable_backup=%d\n", papds9900_data->enable,apds9900_enable_backup);
@@ -2445,25 +1928,18 @@ static int apds9900_resume(struct device *device)
 	if(papds9900_data->enable != 0x2F)
 	{
 		pdata->power(1);
-#if defined(CONFIG_MACH_LGE_325_BOARD_LGU) || defined(CONFIG_MACH_LGE_325_BOARD_SKT) || defined(CONFIG_MACH_LGE_325_BOARD_DCM) 
-	  mdelay(10);
-#else
 		mdelay(20);
-#endif
 	}
 
 	//if(papds9900_data->enable != apds9900_enable_backup)
 	//if((papds9900_data->enable == 0x2F)||(papds9900_data->enable ==0))
 	apds9900_set_enable(papds9900_data->client, apds9900_enable_backup);
 
-#ifdef APDS9900_USE_MUTEX
-#else
+#ifndef APDS9900_USE_MUTEX
 	enable_irq(papds9900_data->client->irq);
-
+	
 	irq_set_irq_wake(papds9900_data->client->irq, 1);
 #endif
-	// suspend /resume logging test	
-	printk(KERN_INFO"%s is exting ... \n", __func__);
 
 	return 0;
 }

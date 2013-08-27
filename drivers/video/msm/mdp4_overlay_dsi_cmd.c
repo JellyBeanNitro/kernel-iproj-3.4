@@ -397,7 +397,7 @@ void mdp4_dsi_cmd_vsync_ctrl(struct fb_info *info, int enable)
 
 	vctrl = &vsync_ctrl_db[cndx];
 
-	pr_debug("%s: clk_enabled=%d vsycn_enabeld=%d req=%d\n", __func__,
+	pr_debug("%s: clk_enabled=%d vsync_enabled=%d req=%d\n", __func__,
 		vctrl->clk_enabled, vctrl->vsync_enabled, enable);
 
 	mutex_lock(&vctrl->update_lock);

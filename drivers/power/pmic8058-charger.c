@@ -115,19 +115,34 @@
 #else
 #define AUTO_CHARGING_VEOC_ITERM			100
 #endif
+#if defined(CONFIG_MACH_LGE_I_BOARD) && !defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) && !defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) //                                              
+#define AUTO_CHARGING_IEOC_ITERM		100
+#else
 #define AUTO_CHARGING_IEOC_ITERM			160
-
+#endif
 #ifdef CONFIG_LGE_CHARGER_VOLTAGE_CURRENT_SCENARIO
 #define AUTO_CHARGING_RESUME_MV_CALC(x) (4250-(x*150))
+#if defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU)
 #define AUTO_CHARGING_RESUME_MV				4250
+#else
+#define AUTO_CHARGING_RESUME_MV				4120
+#endif
 #else
 #define AUTO_CHARGING_RESUME_MV				4100
 #endif
 
 #ifdef CONFIG_LGE_CHARGER_VOLTAGE_CURRENT_SCENARIO
+#if defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU)
 #define AUTO_CHARGING_VBATDET				4300
+#else
+#define AUTO_CHARGING_VBATDET				4170
+#endif
 #define AUTO_CHARGING_VBATDET_DEBOUNCE_TIME_MS		3000
+#if defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU)
 #define AUTO_CHARGING_VEOC_VBATDET			4250
+#else
+#define AUTO_CHARGING_VEOC_VBATDET			4120
+#endif
 #else
 #define AUTO_CHARGING_VBATDET				4150
 #define AUTO_CHARGING_VBATDET_DEBOUNCE_TIME_MS		3000
@@ -188,9 +203,17 @@ extern int batt_therm_raw;
 #ifdef CONFIG_LGE_PM_BATTERY_ALARM
 int is_chg_plugged_in(void);
 
+#if defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU)
+#define DEFAULT_THRESHOLD_LOWER        3500
+#else
 #define DEFAULT_THRESHOLD_LOWER        3300
+#endif
 
+#if defined(CONFIG_MACH_LGE_IJB_BOARD_SKT) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU)
+#define DEFAULT_THRESHOLD_LOWER_CALC(x)		(3500 - (x*0))
+#else
 #define DEFAULT_THRESHOLD_LOWER_CALC(x)		(3300 - (x*0))
+#endif
 #define DEFAULT_THRESHOLD_UPPER_CALC(x)		(4350 - (x*150))
 
 #ifdef CONFIG_LGE_PM_CAYMAN_VZW
@@ -212,10 +235,6 @@ int threshold_mv = DEFAULT_THRESHOLD_LOWER;
 extern int max17040_get_battery_mvolts(void);
 extern void max17040_update_rcomp(int temperature);
 
-/*                                         */
-extern void max17040_init_model(void);
-extern void max17040_quick_start(void);
-/*                                         */
 #endif
 
 /*
@@ -412,7 +431,7 @@ out:
 	return rc;
 }
 
-#ifdef CONFIG_MACH_LGE_I_BOARD_SKT
+#if defined(CONFIG_MACH_LGE_I_BOARD_SKT) || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU)
 /* [START] Sujin.shin Adaptive Charging current Control  - Read VCHG ADC from PM8058 */
 int vchg_read_adc(int channel, int *mv_reading)
 {
@@ -2556,8 +2575,7 @@ static int pm8058_is_battery_id_valid(void)
 
 	if(batt_id == BATT_UNKNOWN)
 	{
-#if defined(CONFIG_LGE_PM_CAYMAN_VZW) || defined(CONFIG_LGE_PM_CAYMAN_MPCS) \
-        || defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
+#if defined(CONFIG_LGE_PM_CAYMAN_VZW) || defined(CONFIG_LGE_PM_CAYMAN_MPCS)
 		return 1;   //temp return true for cayman vzw battery id
 #else /*                                                                        */
 		return 0;
@@ -2711,9 +2729,6 @@ static int pm8058_usb_voltage_lower_limit(void)
 	return ret;
 }
 
-#if !defined(CONFIG_MACH_LGE_I_BOARD_VZW)
-extern unsigned int smpl_on; /*                                      */
-#endif
 
 static int __devinit pm8058_charger_probe(struct platform_device *pdev)
 {
@@ -2731,16 +2746,6 @@ static int __devinit pm8058_charger_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-#if !defined(CONFIG_MACH_LGE_I_BOARD_VZW)
-/*                                         */
-#ifdef CONFIG_LGE_FUEL_GAUGE
-  if(smpl_on)
-  {
-	  max17040_quick_start(); /* move the SBL3 */
-  }
-#endif
-/*                                         */
-#endif
 
 	if (pdata->charger_data_valid) {
 		usb_hw_chg.type = pdata->charger_type;
@@ -2748,16 +2753,6 @@ static int __devinit pm8058_charger_probe(struct platform_device *pdev)
 		chg_data.max_source_current = pdata->max_source_current;
 	}
 
-#if !defined(CONFIG_MACH_LGE_I_BOARD_VZW)
-/*                                         */
-#ifdef CONFIG_LGE_FUEL_GAUGE
-  if(smpl_on)
-  {
-    max17040_init_model();
-  }
-#endif
-/*                                         */
-#endif
 
 	rc = request_irqs(pdev);
 	if (rc) {

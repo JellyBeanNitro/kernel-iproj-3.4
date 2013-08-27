@@ -18,12 +18,16 @@
 #include <linux/mmc/card.h>
 #include <linux/mmc/mmc.h>
 #include <linux/mmc/sd.h>
+#include <linux/module.h>
 
 #include "core.h"
 #include "bus.h"
 #include "mmc_ops.h"
 #include "sd.h"
 #include "sd_ops.h"
+
+unsigned int g_sd_power_direct_ctrl = 0;
+EXPORT_SYMBOL(g_sd_power_direct_ctrl);
 
 static const unsigned int tran_exp[] = {
 	10000,		100000,		1000000,	10000000,
@@ -1153,13 +1157,23 @@ static int mmc_sd_resume(struct mmc_host *host)
 		err = mmc_sd_init_card(host, host->ocr, host->card);
 
 		if (err) {
+#if defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
+            g_sd_power_direct_ctrl = 1; 
+#endif
 			printk(KERN_ERR "%s: Re-init card rc = %d (retries = %d)\n",
 			       mmc_hostname(host), err, retries);
 			retries--;
 			mmc_power_off(host);
-			usleep_range(5000, 5500);
+#if defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
+            mdelay(200);
+#else
+            usleep_range(5000, 5500);
+#endif
 			mmc_power_up(host);
 			mmc_select_voltage(host, host->ocr);
+#if defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
+            g_sd_power_direct_ctrl = 0; 
+#endif
 			continue;
 		}
 		break;
@@ -1290,12 +1304,24 @@ int mmc_attach_sd(struct mmc_host *host)
 	while (retries) {
 		err = mmc_sd_init_card(host, host->ocr, NULL);
 		if (err) {
-			retries--;
+#if defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
+            g_sd_power_direct_ctrl = 1; 
+			printk(KERN_ERR "%s: Re-init card rc = %d (retries = %d)\n",
+			       mmc_hostname(host), err, retries);
+#endif
+            retries--;
 			mmc_power_off(host);
-			usleep_range(5000, 5500);
+#if defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
+            mdelay(200);
+#else		
+            usleep_range(5000, 5500);
+#endif
 			mmc_power_up(host);
 			mmc_select_voltage(host, host->ocr);
-			continue;
+#if defined(CONFIG_MACH_LGE_IJB_BOARD_LGU) || defined(CONFIG_MACH_LGE_IJB_BOARD_SKT)
+            g_sd_power_direct_ctrl = 0; 
+#endif		
+            continue;
 		}
 		break;
 	}
